@@ -58,7 +58,7 @@
         <section class="st-card">
           <div class="st-head"><span class="st-title">2. tree とソース</span><span class="st-meta st-summary"></span></div>
           <div class="st-tools">
-            <button type="button" class="st-copy-tree st-primary" disabled>tree をコピー</button>
+            <button type="button" class="st-copy-tree st-primary" disabled title="画面で見えているとおりにコピーします（閉じているフォルダは、中身を省いて1行にします）">tree をコピー</button>
             <button type="button" class="st-select-all" disabled>すべて選ぶ</button>
             <button type="button" class="st-select-none" disabled>選択を解除</button>
             <button type="button" class="st-expand" disabled>すべて開く</button>
@@ -92,6 +92,7 @@
     let entries = [];       // 対象の拡張子に絞ったファイル { path, ext, text, lines, enc, skipped }
     const cache = new Map();     // path → { text, lines, enc, lastModified }（設定を変えても読み直さないため）
     const selected = new Set();  // 選んだファイルの path
+    const collapsed = new Set(); // 閉じているフォルダの path（作り直しても開け閉めを保つ。tree のコピーにも使う）
     let current = null;          // ファイル名を押して中身を表示しているファイル
 
     // ---------- フォルダを選ぶ ----------
@@ -99,7 +100,7 @@
       if (canPickDir) {
         try { dirHandle = await window.showDirectoryPicker({ mode: 'read' }); }
         catch (e) { if (e.name !== 'AbortError') setStatus('フォルダを開けませんでした：' + e.message); return; }
-        cache.clear(); selected.clear(); current = null;
+        cache.clear(); selected.clear(); collapsed.clear(); current = null;
         await readFromHandle();
       } else {
         el.dirInput.value = '';
@@ -110,7 +111,7 @@
     el.dirInput.onchange = async () => {
       const files = [...el.dirInput.files];
       if (!files.length) return;
-      cache.clear(); selected.clear(); current = null;
+      cache.clear(); selected.clear(); collapsed.clear(); current = null;
       rootName = files[0].webkitRelativePath.split('/')[0];
       const ex = excludeSet();
       allRefs = files
@@ -254,7 +255,8 @@
       const dirLi = (node, label) => {
         const { node: n, name } = merged(node);
         const shown = label ?? name;
-        return `<li class="st-dir" data-dir="${esc(n.path)}"><span class="st-node"><span class="st-toggle">▾</span>` +
+        const closed = collapsed.has(n.path);
+        return `<li class="st-dir${closed ? ' st-collapsed' : ''}" data-dir="${esc(n.path)}"><span class="st-node"><span class="st-toggle">${closed ? '▸' : '▾'}</span>` +
           `<input type="checkbox" data-dir="${esc(n.path)}">` +
           `<span class="st-name">${esc(shown)}/</span><span class="st-meta">${filesUnder(n).length} 個</span></span>` +
           `<ul>${sortedDirs(n).map(d => dirLi(d)).join('')}${n.files.map(fileLi).join('')}</ul></li>`;
@@ -279,7 +281,7 @@
       const t = e.target;
       if (t.classList.contains('st-toggle')) {
         const li = t.closest('.st-dir');
-        if (li) { li.classList.toggle('st-collapsed'); t.textContent = li.classList.contains('st-collapsed') ? '▸' : '▾'; }
+        if (li) setCollapsed(li, !li.classList.contains('st-collapsed'));
         return;
       }
       if (t.matches('input[data-file]')) { t.checked ? selected.add(t.dataset.file) : selected.delete(t.dataset.file); syncDirChecks(); updateSelection(); return; }
@@ -291,8 +293,14 @@
     });
     el.selectAll.onclick = () => { entries.forEach(e => !e.skipped && selected.add(e.path)); renderTree(); };
     el.selectNone.onclick = () => { selected.clear(); renderTree(); };
-    el.expand.onclick = () => el.tree.querySelectorAll('.st-dir').forEach(li => { li.classList.remove('st-collapsed'); li.querySelector('.st-toggle').textContent = '▾'; });
-    el.collapse.onclick = () => el.tree.querySelectorAll('.st-dir').forEach((li, i) => { if (i > 0) { li.classList.add('st-collapsed'); li.querySelector('.st-toggle').textContent = '▸'; } });
+    function setCollapsed(li, on){
+      li.classList.toggle('st-collapsed', on);
+      li.querySelector('.st-toggle').textContent = on ? '▸' : '▾';
+      on ? collapsed.add(li.dataset.dir) : collapsed.delete(li.dataset.dir);
+    }
+    el.expand.onclick = () => el.tree.querySelectorAll('.st-dir').forEach(li => setCollapsed(li, false));
+    // 「すべて閉じる」は、一番上（プロジェクト）の直下のフォルダを閉じる（一番上まで閉じると何も見えなくなるため）
+    el.collapse.onclick = () => el.tree.querySelectorAll('.st-dir').forEach((li, i) => { if (i > 0) setCollapsed(li, true); });
 
     // tree の文字（チャットに貼る用）
     function treeText(){
@@ -305,15 +313,22 @@
           const branch = prefix + (last ? '└─ ' : '├─ ');
           if (it.d) {
             const { node: n, name } = merged(it.d);
-            lines.push(branch + name + '/');
-            walk(n, prefix + (last ? '    ' : '│   '));
+            if (collapsed.has(n.path)) {
+              // 画面で閉じているフォルダは、中身を省いて1行にする（画面で見えているとおりにコピーする）
+              const fs = filesUnder(n);
+              lines.push(branch + name + `/  … (ファイル ${fs.length} 個、${fs.reduce((s, e) => s + e.lines, 0).toLocaleString()} 行)`);
+            } else {
+              lines.push(branch + name + '/');
+              walk(n, prefix + (last ? '    ' : '│   '));
+            }
           } else {
             const f = it.f;
             lines.push(branch + f.path.split('/').pop() + (el.showLines.checked ? (f.skipped ? ' (読み込まず)' : ` (${f.lines}行)`) : ''));
           }
         });
       };
-      walk(top, '');
+      if (collapsed.has(top.path)) lines[0] += `  … (ファイル ${entries.length} 個)`;   // 一番上まで閉じているとき
+      else walk(top, '');
       const total = entries.reduce((s, e) => s + e.lines, 0);
       lines.push('', `（ファイル ${entries.length} 個、合計 ${total.toLocaleString()} 行）`);
       return lines.join('\n');
@@ -424,7 +439,7 @@
 
     // 試験用：ファイルの一覧を直接渡して読み込む（{ path, text, lastModified? } の配列）
     root.srcTreeLoad = async (name, list) => {
-      rootName = name; dirHandle = null; cache.clear(); selected.clear(); current = null;
+      rootName = name; dirHandle = null; cache.clear(); selected.clear(); collapsed.clear(); current = null;
       allRefs = list.map(x => ({ path: x.path, ext: extOf(x.path), getFile: async () => new File([x.bytes || x.text], x.path.split('/').pop(), { lastModified: x.lastModified || 1 }) }));
       await applyFilter();
     };
