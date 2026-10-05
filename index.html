@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ソースを AI に渡す（src-tree）</title>
+<link rel="stylesheet" href="src-tree.css">
+<style>
+/* ローカルで開くときだけのページの見た目（ブログでは、ここはテーマが担当する） */
+body{margin:0;padding:16px 20px;background:#f6f7f9;color:#222;font-family:"Yu Gothic UI","Meiryo",sans-serif;line-height:1.6}
+.page{max-width:1400px;margin:0 auto}
+h1{font-size:18px;margin:0 0 4px}
+.lead{font-size:13px;color:#666;margin:0 0 4px}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>ソースを AI に渡す（src-tree）</h1>
+  <p class="lead">プロジェクトのフォルダを選ぶと、解析に必要なファイルだけの tree を表示します。tree やソースを、チャット型 AI（Copilot など）に貼りやすい形でコピーできます。ファイルはこのブラウザの中で読むだけで、どこにも送りません。</p>
+
+  <!-- ここから下が、ブログの固定ページにも置く部分（ブログではファイルの場所を /assets/src-tree/... にする） -->
+  <div class="src-tree-tool"></div>
+  <script src="src-tree.js"></script>
+</div>
+</body>
+</html>

@@ -1,0 +1,435 @@
+// src-tree：ローカルのプロジェクトのフォルダを選ぶと、解析に必要なファイルだけの tree を表示し、
+// tree やソースを、チャット型 AI（Copilot など）に貼りやすい形でコピーする。
+// 置き方：<div class="src-tree-tool"></div> のあとで src-tree.js を読み込む。画面の部品はこの JS が箱の中に作る。
+// ファイルはブラウザの中で読むだけで、どこにも送らない。
+(() => {
+  // 初期設定
+  const EXTS = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat', 'js', 'html', 'css', 'tld', 'xsl', 'gradle', 'txt'];
+  const EXTS_ON = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat'];
+  const EXCLUDE = '.git, .svn, bin, build, classes, target, out, .settings, .metadata, .idea, node_modules';
+  const PART_LINES = 2500;            // 1回にコピーする行数の上限（Copilot は 3000 行くらいまで貼れた）
+  const MAX_BYTES = 2 * 1024 * 1024;  // これより大きいファイルは読み込まない
+  // コードの囲みに付ける言語の名前
+  const LANG = { java: 'java', jsp: 'jsp', xml: 'xml', properties: 'properties', sql: 'sql', sh: 'bash', bat: 'bat', js: 'javascript', html: 'html', css: 'css', tld: 'xml', xsl: 'xml', gradle: 'groovy', txt: 'text' };
+
+  function init(root){
+    const canPickDir = typeof window.showDirectoryPicker === 'function';   // Chrome・Edge
+    root.innerHTML = `
+      <div class="st-grid">
+        <section class="st-card">
+          <div class="st-head"><span class="st-title">1. フォルダを選ぶ</span></div>
+          <div class="st-row" style="margin-top:0">
+            <button type="button" class="st-pick st-primary st-big">フォルダを選ぶ</button>
+            <button type="button" class="st-reload" hidden title="git pull などでファイルが変わったら、選び直さずに読み込み直せます">読み込み直し</button>
+          </div>
+          <input type="file" class="st-dir-input" webkitdirectory multiple hidden>
+          <p class="st-note">ファイルはこのブラウザの中で読むだけで、どこにも送りません。${canPickDir ? '' : 'ブラウザによっては「アップロードしますか」と聞かれますが、実際には送りません。'}</p>
+          <progress class="st-progress" hidden></progress>
+          <div class="st-status"></div>
+
+          <div class="st-group">
+            <div class="st-legend">対象の拡張子</div>
+            <div class="st-exts">${EXTS.map(e => `<label><input type="checkbox" value="${e}"${EXTS_ON.includes(e) ? ' checked' : ''}> .${e}</label>`).join('')}</div>
+            <div style="margin-top:6px"><input type="text" class="st-ext-more" placeholder="ほかの拡張子（カンマ区切り。例：vm, ftl, conf）"></div>
+          </div>
+          <div class="st-group">
+            <div class="st-legend">外すフォルダ（カンマ区切り）</div>
+            <input type="text" class="st-exclude" value="${EXCLUDE}">
+          </div>
+          <details>
+            <summary>そのほかの設定</summary>
+            <div class="st-row">
+              <label>文字コード <select class="st-enc">
+                <option value="auto">自動（UTF-8 で読めなければ Shift_JIS）</option>
+                <option value="utf-8">UTF-8</option><option value="shift_jis">Shift_JIS</option><option value="euc-jp">EUC-JP</option>
+              </select></label>
+            </div>
+            <div class="st-row">
+              <label><input type="checkbox" class="st-merge" checked> 中身が1つのフォルダをまとめて書く（com/example/… のように）</label>
+              <label><input type="checkbox" class="st-show-lines" checked> tree に行数を書く</label>
+            </div>
+            <div class="st-row">
+              <label>1回にコピーする上限 <input type="number" class="st-part-lines" min="100" max="100000" step="100" value="${PART_LINES}"> 行</label>
+            </div>
+            <p class="st-note">上限を超えると、何回かに分けてコピーします（ファイルの途中では切りません。1つのファイルだけで上限を超えるときは、そのファイルを行で区切ります）。</p>
+          </details>
+        </section>
+
+        <section class="st-card">
+          <div class="st-head"><span class="st-title">2. tree とソース</span><span class="st-meta st-summary"></span></div>
+          <div class="st-tools">
+            <button type="button" class="st-copy-tree st-primary" disabled>tree をコピー</button>
+            <button type="button" class="st-select-all" disabled>すべて選ぶ</button>
+            <button type="button" class="st-select-none" disabled>選択を解除</button>
+            <button type="button" class="st-expand" disabled>すべて開く</button>
+            <button type="button" class="st-collapse" disabled>すべて閉じる</button>
+          </div>
+          <div class="st-tree"><div class="st-empty">フォルダを選ぶと、ここに tree が出ます。<br>ファイルにチェックを付けると、そのソースをまとめてコピーできます。ファイル名を押すと、下に中身が出ます。</div></div>
+          <div class="st-row">
+            <span class="st-selected">選んだファイル：なし</span>
+            <button type="button" class="st-copy-selected st-primary" disabled>選んだファイルをコピー</button>
+          </div>
+          <div class="st-parts"></div>
+          <div class="st-warn" hidden></div>
+          <textarea class="st-preview" readonly spellcheck="false" placeholder="コピーした内容や、押したファイルの中身がここに出ます"></textarea>
+          <div class="st-row"><button type="button" class="st-copy-current" disabled>このファイルをコピー</button><span class="st-meta st-current-name"></span></div>
+        </section>
+      </div>`;
+
+    const q = s => root.querySelector(s);
+    const el = {
+      pick: q('.st-pick'), reload: q('.st-reload'), dirInput: q('.st-dir-input'), progress: q('.st-progress'), status: q('.st-status'),
+      exts: [...root.querySelectorAll('.st-exts input')], extMore: q('.st-ext-more'), exclude: q('.st-exclude'), enc: q('.st-enc'),
+      merge: q('.st-merge'), showLines: q('.st-show-lines'), partLines: q('.st-part-lines'),
+      summary: q('.st-summary'), copyTree: q('.st-copy-tree'), selectAll: q('.st-select-all'), selectNone: q('.st-select-none'),
+      expand: q('.st-expand'), collapse: q('.st-collapse'), tree: q('.st-tree'), selected: q('.st-selected'), copySelected: q('.st-copy-selected'),
+      parts: q('.st-parts'), warn: q('.st-warn'), preview: q('.st-preview'), copyCurrent: q('.st-copy-current'), currentName: q('.st-current-name'),
+    };
+
+    let rootName = '';      // 選んだフォルダの名前
+    let dirHandle = null;   // File System Access API で選んだときのフォルダ（読み込み直しに使う）
+    let allRefs = [];       // 外すフォルダ以外の、すべてのファイル { path, ext, size, getFile }
+    let entries = [];       // 対象の拡張子に絞ったファイル { path, ext, text, lines, enc, skipped }
+    const cache = new Map();     // path → { text, lines, enc, lastModified }（設定を変えても読み直さないため）
+    const selected = new Set();  // 選んだファイルの path
+    let current = null;          // ファイル名を押して中身を表示しているファイル
+
+    // ---------- フォルダを選ぶ ----------
+    el.pick.onclick = async () => {
+      if (canPickDir) {
+        try { dirHandle = await window.showDirectoryPicker({ mode: 'read' }); }
+        catch (e) { if (e.name !== 'AbortError') setStatus('フォルダを開けませんでした：' + e.message); return; }
+        cache.clear(); selected.clear(); current = null;
+        await readFromHandle();
+      } else {
+        el.dirInput.value = '';
+        el.dirInput.click();
+      }
+    };
+    el.reload.onclick = () => readFromHandle();
+    el.dirInput.onchange = async () => {
+      const files = [...el.dirInput.files];
+      if (!files.length) return;
+      cache.clear(); selected.clear(); current = null;
+      rootName = files[0].webkitRelativePath.split('/')[0];
+      const ex = excludeSet();
+      allRefs = files
+        .map(f => ({ path: f.webkitRelativePath.split('/').slice(1).join('/'), size: f.size, getFile: async () => f }))
+        .filter(r => r.path && !r.path.split('/').slice(0, -1).some(d => ex.has(d.toLowerCase())))
+        .map(r => ({ ...r, ext: extOf(r.path) }));
+      await applyFilter();
+    };
+
+    // Chrome・Edge：フォルダをたどる。外すフォルダには入らない（.git や node_modules をたどると時間がかかるため）
+    async function readFromHandle(){
+      if (!dirHandle) return;
+      rootName = dirHandle.name;
+      el.reload.hidden = false;
+      busy(true, 'フォルダをたどっています…');
+      const ex = excludeSet();
+      const refs = [];
+      async function walk(dir, prefix){
+        for await (const [name, h] of dir.entries()) {
+          if (h.kind === 'directory') {
+            if (!ex.has(name.toLowerCase())) await walk(h, prefix + name + '/');
+          } else {
+            refs.push({ path: prefix + name, ext: extOf(name), getFile: () => h.getFile() });
+          }
+        }
+      }
+      try { await walk(dirHandle, ''); }
+      catch (e) { busy(false); setStatus('フォルダを読めませんでした：' + e.message); return; }
+      allRefs = refs;
+      await applyFilter();
+    }
+
+    // ---------- 絞り込みと読み込み ----------
+    function excludeSet(){ return new Set(el.exclude.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)); }
+    function extSet(){
+      const s = new Set(el.exts.filter(c => c.checked).map(c => c.value));
+      el.extMore.value.split(',').map(x => x.trim().replace(/^\./, '').toLowerCase()).filter(Boolean).forEach(x => s.add(x));
+      return s;
+    }
+    const extOf = p => { const m = p.match(/\.([^./]+)$/); return m ? m[1].toLowerCase() : ''; };
+
+    async function applyFilter(){
+      const exts = extSet(), ex = excludeSet();
+      const targets = allRefs
+        .filter(r => exts.has(r.ext) && !r.path.split('/').slice(0, -1).some(d => ex.has(d.toLowerCase())))
+        .sort((a, b) => a.path.localeCompare(b.path));
+      busy(true, `ファイルを読み込んでいます…（0 / ${targets.length}）`);
+      el.progress.max = targets.length || 1;
+      const out = [];
+      let i = 0;
+      for (const r of targets) {
+        out.push(await readEntry(r));
+        if (++i % 20 === 0) { el.progress.value = i; setStatus(`ファイルを読み込んでいます…（${i} / ${targets.length}）`); }
+      }
+      entries = out;
+      for (const p of [...selected]) if (!entries.some(e => e.path === p)) selected.delete(p);
+      busy(false);
+      const total = entries.reduce((s, e) => s + e.lines, 0);
+      const sjis = entries.filter(e => e.enc === 'Shift_JIS').length;
+      const skipped = entries.filter(e => e.skipped).length;
+      setStatus(`「${rootName}」を読み込みました。ファイル ${entries.length} 個、合計 ${total.toLocaleString()} 行` +
+        (sjis ? `（Shift_JIS ${sjis} 個）` : '') + (skipped ? `。大きすぎて読み込まなかったファイル ${skipped} 個` : ''));
+      renderTree();
+    }
+
+    async function readEntry(r){
+      const f = await r.getFile();
+      const hit = cache.get(r.path);
+      if (hit && hit.lastModified === f.lastModified && hit.encSetting === el.enc.value) return { path: r.path, ext: r.ext, ...hit };
+      let rec;
+      if (f.size > MAX_BYTES) rec = { text: '', lines: 0, enc: '', skipped: true };
+      else {
+        const { text, enc } = decode(await f.arrayBuffer());
+        rec = { text, lines: text ? text.split('\n').length - (text.endsWith('\n') ? 1 : 0) : 0, enc, skipped: false };
+      }
+      rec.lastModified = f.lastModified; rec.encSetting = el.enc.value;
+      cache.set(r.path, rec);
+      return { path: r.path, ext: r.ext, ...rec };
+    }
+
+    // 文字コード：古い Java のソースは Shift_JIS（MS932）のことが多いので、UTF-8 として読めなければ Shift_JIS で読む
+    function decode(buf){
+      const setting = el.enc.value;
+      const strip = s => s.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+      if (setting !== 'auto') return { text: strip(new TextDecoder(setting).decode(buf)), enc: setting === 'utf-8' ? 'UTF-8' : setting === 'shift_jis' ? 'Shift_JIS' : 'EUC-JP' };
+      try { return { text: strip(new TextDecoder('utf-8', { fatal: true }).decode(buf)), enc: 'UTF-8' }; }
+      catch (e) { return { text: strip(new TextDecoder('shift_jis').decode(buf)), enc: 'Shift_JIS' }; }
+    }
+
+    // 設定を変えたら、選び直さずに作り直す（外すフォルダを変えたら、Chrome・Edge ではフォルダをたどり直す）
+    el.exts.forEach(c => c.onchange = () => allRefs.length && applyFilter());
+    el.extMore.onchange = () => allRefs.length && applyFilter();
+    el.exclude.onchange = () => { if (dirHandle) readFromHandle(); else if (allRefs.length) applyFilter(); };
+    el.enc.onchange = () => allRefs.length && applyFilter();
+    el.merge.onchange = renderTree;
+    el.showLines.onchange = renderTree;
+    el.partLines.onchange = updateSelection;
+
+    // ---------- tree ----------
+    // path の一覧から、フォルダの入れ子を作る。node = { name, path, dirs: Map, files: [] }
+    function buildTree(){
+      const top = { name: rootName, path: '', dirs: new Map(), files: [] };
+      for (const e of entries) {
+        const parts = e.path.split('/');
+        let node = top;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!node.dirs.has(parts[i])) node.dirs.set(parts[i], { name: parts[i], path: parts.slice(0, i + 1).join('/'), dirs: new Map(), files: [] });
+          node = node.dirs.get(parts[i]);
+        }
+        node.files.push(e);
+      }
+      return top;
+    }
+    // 中身が1つのフォルダだけのフォルダは、名前をつなげてまとめる（src/com/example/ のように）
+    function merged(node){
+      let n = node, name = node.name;
+      while (el.merge.checked && n.files.length === 0 && n.dirs.size === 1) { n = [...n.dirs.values()][0]; name += '/' + n.name; }
+      return { node: n, name };
+    }
+    const filesUnder = node => [...node.files, ...[...node.dirs.values()].flatMap(filesUnder)];
+    const sortedDirs = node => [...node.dirs.values()].sort((a, b) => a.name.localeCompare(b.name));
+
+    function renderTree(){
+      const has = entries.length > 0;
+      [el.copyTree, el.selectAll, el.selectNone, el.expand, el.collapse].forEach(b => b.disabled = !has);
+      if (!has) {
+        el.tree.innerHTML = `<div class="st-empty">${allRefs.length ? '対象のファイルがありません。左の「対象の拡張子」や「外すフォルダ」を確かめてください。' : 'フォルダを選ぶと、ここに tree が出ます。'}</div>`;
+        el.summary.textContent = '';
+        updateSelection();
+        return;
+      }
+      const top = buildTree();
+      const total = entries.reduce((s, e) => s + e.lines, 0);
+      el.summary.textContent = `ファイル ${entries.length} 個、${total.toLocaleString()} 行`;
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const fileLi = e => `<li class="st-file${current === e.path ? ' st-current' : ''}" data-path="${esc(e.path)}"><span class="st-node"><span class="st-toggle"></span>` +
+        `<input type="checkbox" data-file="${esc(e.path)}"${selected.has(e.path) ? ' checked' : ''}>` +
+        `<span class="st-name">${esc(e.path.split('/').pop())}</span>` +
+        `<span class="st-meta">${e.skipped ? '（大きすぎるので読み込まない）' : `(${e.lines.toLocaleString()}行)`}</span>` +
+        (e.enc === 'Shift_JIS' ? '<span class="st-sjis" title="Shift_JIS で読みました">SJIS</span>' : '') + '</span></li>';
+      const dirLi = (node, label) => {
+        const { node: n, name } = merged(node);
+        const shown = label ?? name;
+        return `<li class="st-dir" data-dir="${esc(n.path)}"><span class="st-node"><span class="st-toggle">▾</span>` +
+          `<input type="checkbox" data-dir="${esc(n.path)}">` +
+          `<span class="st-name">${esc(shown)}/</span><span class="st-meta">${filesUnder(n).length} 個</span></span>` +
+          `<ul>${sortedDirs(n).map(d => dirLi(d)).join('')}${n.files.map(fileLi).join('')}</ul></li>`;
+      };
+      el.tree.innerHTML = `<ul>${dirLi(top)}</ul>`;
+      syncDirChecks();
+      updateSelection();
+    }
+
+    // フォルダのチェックの状態を、中のファイルに合わせる（全部選んでいればチェック、一部なら「－」）
+    function syncDirChecks(){
+      el.tree.querySelectorAll('input[data-dir]').forEach(cb => {
+        const li = cb.closest('li');
+        const files = [...li.querySelectorAll('input[data-file]')].map(x => x.dataset.file);
+        const n = files.filter(p => selected.has(p)).length;
+        cb.checked = files.length > 0 && n === files.length;
+        cb.indeterminate = n > 0 && n < files.length;
+      });
+    }
+
+    el.tree.addEventListener('click', e => {
+      const t = e.target;
+      if (t.classList.contains('st-toggle')) {
+        const li = t.closest('.st-dir');
+        if (li) { li.classList.toggle('st-collapsed'); t.textContent = li.classList.contains('st-collapsed') ? '▸' : '▾'; }
+        return;
+      }
+      if (t.matches('input[data-file]')) { t.checked ? selected.add(t.dataset.file) : selected.delete(t.dataset.file); syncDirChecks(); updateSelection(); return; }
+      if (t.matches('input[data-dir]')) {
+        t.closest('li').querySelectorAll('input[data-file]').forEach(x => { x.checked = t.checked; t.checked ? selected.add(x.dataset.file) : selected.delete(x.dataset.file); });
+        syncDirChecks(); updateSelection(); return;
+      }
+      if (t.classList.contains('st-name') && t.closest('.st-file')) showFile(t.closest('.st-file').dataset.path);
+    });
+    el.selectAll.onclick = () => { entries.forEach(e => !e.skipped && selected.add(e.path)); renderTree(); };
+    el.selectNone.onclick = () => { selected.clear(); renderTree(); };
+    el.expand.onclick = () => el.tree.querySelectorAll('.st-dir').forEach(li => { li.classList.remove('st-collapsed'); li.querySelector('.st-toggle').textContent = '▾'; });
+    el.collapse.onclick = () => el.tree.querySelectorAll('.st-dir').forEach((li, i) => { if (i > 0) { li.classList.add('st-collapsed'); li.querySelector('.st-toggle').textContent = '▸'; } });
+
+    // tree の文字（チャットに貼る用）
+    function treeText(){
+      const { node: top, name: topName } = merged(buildTree());
+      const lines = [topName + '/'];
+      const walk = (node, prefix) => {
+        const items = [...sortedDirs(node).map(d => ({ d })), ...node.files.map(f => ({ f }))];
+        items.forEach((it, i) => {
+          const last = i === items.length - 1;
+          const branch = prefix + (last ? '└─ ' : '├─ ');
+          if (it.d) {
+            const { node: n, name } = merged(it.d);
+            lines.push(branch + name + '/');
+            walk(n, prefix + (last ? '    ' : '│   '));
+          } else {
+            const f = it.f;
+            lines.push(branch + f.path.split('/').pop() + (el.showLines.checked ? (f.skipped ? ' (読み込まず)' : ` (${f.lines}行)`) : ''));
+          }
+        });
+      };
+      walk(top, '');
+      const total = entries.reduce((s, e) => s + e.lines, 0);
+      lines.push('', `（ファイル ${entries.length} 個、合計 ${total.toLocaleString()} 行）`);
+      return lines.join('\n');
+    }
+    el.copyTree.onclick = async () => { const t = treeText(); el.preview.value = t; await copy(t, el.copyTree, 'tree をコピー'); };
+
+    // ---------- ソースのコピー ----------
+    // コードの囲み。ソースの中に ``` があっても壊れないよう、それより長い ` で囲む
+    function block(e, from, to){
+      const ls = e.text.split('\n');
+      if (ls[ls.length - 1] === '') ls.pop();
+      const body = ls.slice(from, to).join('\n');
+      const longest = Math.max(2, ...(body.match(/`+/g) || []).map(s => s.length));
+      const fence = '`'.repeat(longest + 1);
+      const range = from === 0 && to >= ls.length ? `（${e.lines}行）` : `（${from + 1}〜${Math.min(to, ls.length)}行目／全${e.lines}行）`;
+      return `### ${e.path}${range}\n${fence}${LANG[e.ext] || ''}\n${body}\n${fence}`;
+    }
+
+    // 選んだファイルを、上限の行数ごとに分ける。ファイルの途中では切らない。1つで上限を超えるファイルは行で区切る
+    function buildParts(){
+      const limit = Math.max(100, Number(el.partLines.value) || PART_LINES);
+      const files = entries.filter(e => selected.has(e.path) && !e.skipped);
+      const pieces = [];   // { e, from, to, lines }
+      for (const e of files) {
+        if (e.lines <= limit) pieces.push({ e, from: 0, to: e.lines, lines: e.lines });
+        else for (let s = 0; s < e.lines; s += limit) pieces.push({ e, from: s, to: Math.min(s + limit, e.lines), lines: Math.min(limit, e.lines - s) });
+      }
+      const parts = [];
+      let cur = [];
+      let n = 0;
+      for (const p of pieces) {
+        if (cur.length && n + p.lines > limit) { parts.push(cur); cur = []; n = 0; }
+        cur.push(p); n += p.lines;
+      }
+      if (cur.length) parts.push(cur);
+      return { files, parts, limit, big: files.filter(e => e.lines > limit) };
+    }
+    function partText(part, i, count){
+      const lines = part.reduce((s, p) => s + p.lines, 0);
+      const names = new Set(part.map(p => p.e.path));
+      const head = `【src-tree】${rootName} のソース` + (count > 1 ? ` ${i + 1}/${count}` : '') + `（ファイル ${names.size} 個、${lines.toLocaleString()} 行）`;
+      return head + '\n\n' + part.map(p => block(p.e, p.from, p.to)).join('\n\n') + '\n';
+    }
+
+    function updateSelection(){
+      const { files, parts, limit, big } = buildParts();
+      const lines = files.reduce((s, e) => s + e.lines, 0);
+      el.selected.textContent = files.length ? `選んだファイル：${files.length} 個、${lines.toLocaleString()} 行` + (parts.length > 1 ? ` → ${parts.length} 回に分けてコピー` : '') : '選んだファイル：なし';
+      el.copySelected.disabled = !files.length;
+      el.copySelected.hidden = parts.length > 1;
+      el.parts.innerHTML = parts.length > 1 ? parts.map((_, i) => `<button type="button" data-part="${i}" class="st-primary">${i + 1}/${parts.length} をコピー</button>`).join('') : '';
+      el.warn.hidden = !big.length;
+      el.warn.textContent = big.length ? `上限（${limit.toLocaleString()} 行）を超えるファイルは、行で区切ってコピーします：${big.map(e => e.path.split('/').pop()).join('、')}` : '';
+    }
+    el.copySelected.onclick = async () => {
+      const { parts } = buildParts();
+      if (parts.length !== 1) return;
+      const t = partText(parts[0], 0, 1);
+      el.preview.value = t;
+      await copy(t, el.copySelected, '選んだファイルをコピー');
+    };
+    el.parts.addEventListener('click', async e => {
+      const b = e.target.closest('button[data-part]');
+      if (!b) return;
+      const { parts } = buildParts();
+      const i = Number(b.dataset.part);
+      const t = partText(parts[i], i, parts.length);
+      el.preview.value = t;
+      await copy(t, b, `${i + 1}/${parts.length} をコピー`);
+      b.classList.add('st-done');   // どこまでコピーしたか分かるように
+    });
+
+    // ファイル名を押したら、中身を下に表示する
+    function showFile(path){
+      const e = entries.find(x => x.path === path);
+      if (!e) return;
+      current = path;
+      el.tree.querySelectorAll('.st-file').forEach(li => li.classList.toggle('st-current', li.dataset.path === path));
+      el.preview.value = e.skipped ? '（大きすぎるので読み込んでいません）' : block(e, 0, e.lines);
+      el.currentName.textContent = `${path}（${e.lines.toLocaleString()}行${e.enc ? '、' + e.enc : ''}）`;
+      el.copyCurrent.disabled = e.skipped;
+    }
+    el.copyCurrent.onclick = async () => {
+      const e = entries.find(x => x.path === current);
+      if (!e) return;
+      const t = block(e, 0, e.lines);
+      el.preview.value = t;
+      await copy(t, el.copyCurrent, 'このファイルをコピー');
+    };
+
+    // ---------- 共通 ----------
+    async function copy(text, button, label){
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = 'コピーしました';
+      } catch (e) {
+        el.preview.focus(); el.preview.select();
+        button.textContent = 'コピーできませんでした（下の欄から選んでコピー）';
+      }
+      setTimeout(() => button.textContent = label, 1800);
+    }
+    function setStatus(msg){ el.status.textContent = msg; }
+    function busy(on, msg){
+      el.pick.disabled = on; el.reload.disabled = on;
+      el.progress.hidden = !on;
+      if (on) { el.progress.removeAttribute('value'); if (msg) setStatus(msg); }
+    }
+
+    // 試験用：ファイルの一覧を直接渡して読み込む（{ path, text, lastModified? } の配列）
+    root.srcTreeLoad = async (name, list) => {
+      rootName = name; dirHandle = null; cache.clear(); selected.clear(); current = null;
+      allRefs = list.map(x => ({ path: x.path, ext: extOf(x.path), getFile: async () => new File([x.bytes || x.text], x.path.split('/').pop(), { lastModified: x.lastModified || 1 }) }));
+      await applyFilter();
+    };
+  }
+
+  const start = () => document.querySelectorAll('.src-tree-tool').forEach(init);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
