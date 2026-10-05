@@ -71,6 +71,16 @@ write("WebContent/WEB-INF/struts-config.xml", """<?xml version="1.0" encoding="S
 write("WebContent/order/list.jsp", """<%@ page contentType="text/html; charset=Windows-31J" %>
 <html><body>受注一覧</body></html>
 """, enc="cp932")
+write("src/com/example/order/util/DateUtil.java", """package com.example.order.util;
+
+/**
+ * 日付のユーティリティ（EUC-JP で保存されている想定。昔の Linux で書かれたファイルなど）
+ */
+public class DateUtil {
+    /** 和暦の年を返す（平成・令和） */
+    public static String toWareki(int year) { return year >= 2019 ? "令和" + (year - 2018) : "平成" + (year - 1988); }
+}
+""", enc="euc_jp")
 write("build.xml", """<project name="order" default="build"><target name="build"/></project>
 """)
 write("conf/db.properties", "db.url=jdbc:oracle:thin:@localhost:1521:ORCL\n")

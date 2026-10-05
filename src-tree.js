@@ -40,7 +40,7 @@
             <summary>そのほかの設定</summary>
             <div class="st-row">
               <label>文字コード <select class="st-enc">
-                <option value="auto">自動（UTF-8 で読めなければ Shift_JIS）</option>
+                <option value="auto">自動（UTF-8・Shift_JIS・EUC-JP を判定）</option>
                 <option value="utf-8">UTF-8</option><option value="shift_jis">Shift_JIS</option><option value="euc-jp">EUC-JP</option>
               </select></label>
             </div>
@@ -171,9 +171,10 @@
       busy(false);
       const total = entries.reduce((s, e) => s + e.lines, 0);
       const sjis = entries.filter(e => e.enc === 'Shift_JIS').length;
+      const euc = entries.filter(e => e.enc === 'EUC-JP').length;
       const skipped = entries.filter(e => e.skipped).length;
       setStatus(`「${rootName}」を読み込みました。ファイル ${entries.length} 個、合計 ${total.toLocaleString()} 行` +
-        (sjis ? `（Shift_JIS ${sjis} 個）` : '') + (skipped ? `。大きすぎて読み込まなかったファイル ${skipped} 個` : ''));
+        (sjis || euc ? `（${[sjis && `Shift_JIS ${sjis} 個`, euc && `EUC-JP ${euc} 個`].filter(Boolean).join('、')}）` : '') + (skipped ? `。大きすぎて読み込まなかったファイル ${skipped} 個` : ''));
       renderTree();
     }
 
@@ -192,13 +193,35 @@
       return { path: r.path, ext: r.ext, ...rec };
     }
 
-    // 文字コード：古い Java のソースは Shift_JIS（MS932）のことが多いので、UTF-8 として読めなければ Shift_JIS で読む
+    // 文字コード：古い Java のソースは Shift_JIS（MS932）のことが多く、まれに EUC-JP もある。
+    // 自動のときは、UTF-8 として正しく読めれば UTF-8。だめなら Shift_JIS と EUC-JP のうち、正しく読めるほうにする
     function decode(buf){
       const setting = el.enc.value;
-      const strip = s => s.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
-      if (setting !== 'auto') return { text: strip(new TextDecoder(setting).decode(buf)), enc: setting === 'utf-8' ? 'UTF-8' : setting === 'shift_jis' ? 'Shift_JIS' : 'EUC-JP' };
-      try { return { text: strip(new TextDecoder('utf-8', { fatal: true }).decode(buf)), enc: 'UTF-8' }; }
-      catch (e) { return { text: strip(new TextDecoder('shift_jis').decode(buf)), enc: 'Shift_JIS' }; }
+      const strip = s => s.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+      const NAME = { 'utf-8': 'UTF-8', shift_jis: 'Shift_JIS', 'euc-jp': 'EUC-JP' };
+      if (setting !== 'auto') return { text: strip(new TextDecoder(setting).decode(buf)), enc: NAME[setting] };
+      const tryFatal = label => { try { return new TextDecoder(label, { fatal: true }).decode(buf); } catch (e) { return null; } };
+      const u = tryFatal('utf-8');
+      if (u !== null) return { text: strip(u), enc: 'UTF-8' };
+      const enc = guessJapanese(new Uint8Array(buf), tryFatal('shift_jis'), tryFatal('euc-jp'));
+      return { text: strip(new TextDecoder(enc).decode(buf)), enc: NAME[enc] };
+    }
+
+    // Shift_JIS か EUC-JP か。
+    // EUC-JP は日本語の文字にほぼ 0xA1〜0xFE しか使わず、0x80〜0xA0 は（0x8E・0x8F を除いて）使わない。
+    // Shift_JIS はひらがな・カタカナの1バイト目が 0x82・0x83 なので、日本語の文章ならこの範囲のバイトがほぼ必ずある
+    function guessJapanese(bytes, sjisText, eucText){
+      if (sjisText !== null && eucText === null) return 'shift_jis';
+      if (eucText !== null && sjisText === null) return 'euc-jp';
+      let sjisOnly = 0;
+      for (const b of bytes) if (b >= 0x80 && b <= 0xA0 && b !== 0x8E && b !== 0x8F) sjisOnly++;
+      if (sjisOnly > 0) return 'shift_jis';
+      if (eucText !== null) return 'euc-jp';
+      // どちらも正しく読めないとき：読んだ結果の「日本語らしさ」で選ぶ（ひらがな・カタカナ・漢字が多く、半角カナや読めない文字が少ないほう）
+      const score = t => (t.match(/[\u3041-\u3096\u30A1-\u30FA\u4E00-\u9FFF]/g) || []).length
+        - 3 * (t.match(/[\uFF61-\uFF9F\uFFFD]/g) || []).length;
+      const sj = new TextDecoder('shift_jis').decode(bytes), eu = new TextDecoder('euc-jp').decode(bytes);
+      return score(eu) > score(sj) ? 'euc-jp' : 'shift_jis';
     }
 
     // 設定を変えたら、選び直さずに作り直す（外すフォルダを変えたら、Chrome・Edge ではフォルダをたどり直す）
@@ -251,7 +274,7 @@
         `<input type="checkbox" data-file="${esc(e.path)}"${selected.has(e.path) ? ' checked' : ''}>` +
         `<span class="st-name">${esc(e.path.split('/').pop())}</span>` +
         `<span class="st-meta">${e.skipped ? '（大きすぎるので読み込まない）' : `(${e.lines.toLocaleString()}行)`}</span>` +
-        (e.enc === 'Shift_JIS' ? '<span class="st-sjis" title="Shift_JIS で読みました">SJIS</span>' : '') + '</span></li>';
+        (e.enc === 'Shift_JIS' ? '<span class="st-sjis" title="Shift_JIS で読みました">SJIS</span>' : e.enc === 'EUC-JP' ? '<span class="st-sjis" title="EUC-JP で読みました">EUC</span>' : '') + '</span></li>';
       const dirLi = (node, label) => {
         const { node: n, name } = merged(node);
         const shown = label ?? name;
