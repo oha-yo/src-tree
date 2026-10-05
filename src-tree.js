@@ -12,6 +12,12 @@
   // コードの囲みに付ける言語の名前
   const LANG = { java: 'java', jsp: 'jsp', xml: 'xml', properties: 'properties', sql: 'sql', sh: 'bash', bat: 'bat', js: 'javascript', html: 'html', css: 'css', tld: 'xml', xsl: 'xml', gradle: 'groovy', txt: 'text' };
 
+  const PH = {
+    name: 'ファイル名で探す（例：OrderDao、*Action.java、order dao、batch/）',
+    grep: '中身で探す（例：T_ORDER、executeQuery、受注番号）',
+  };
+  const GREP_SHOW = 1000;   // 一覧に出す行の上限（コピーには全部入れる）
+
   function init(root){
     const canPickDir = typeof window.showDirectoryPicker === 'function';   // Chrome・Edge
     root.innerHTML = `
@@ -59,9 +65,14 @@
         <section class="st-card">
           <div class="st-head"><span class="st-title">2. tree とソース</span><span class="st-meta st-summary"></span></div>
           <div class="st-find">
-            <input type="text" class="st-find-input" placeholder="ファイル名で探す（例：OrderDao、*Action.java、order dao、batch/）" disabled>
+            <select class="st-find-mode" title="ファイル名で探すか、ファイルの中身で探すか"><option value="name">ファイル名</option><option value="grep">中身（grep）</option></select>
+            <input type="text" class="st-find-input" placeholder="${PH.name}" disabled>
             <button type="button" class="st-find-clear" hidden title="絞り込みをやめる">×</button>
             <span class="st-meta st-find-count"></span>
+          </div>
+          <div class="st-row st-grep-opts" hidden>
+            <label><input type="checkbox" class="st-grep-case"> 大文字・小文字を区別</label>
+            <label><input type="checkbox" class="st-grep-re"> 正規表現</label>
           </div>
           <div class="st-tools">
             <button type="button" class="st-copy-tree st-primary" disabled title="画面で見えているとおりにコピーします（閉じているフォルダは、中身を省いて1行にします）">tree をコピー</button>
@@ -71,6 +82,10 @@
             <button type="button" class="st-collapse" disabled>すべて閉じる</button>
           </div>
           <div class="st-tree"><div class="st-empty">フォルダを選ぶと、ここに tree が出ます。<br>ファイルにチェックを付けると、そのソースをまとめてコピーできます。ファイル名を押すと、下に中身が出ます。</div></div>
+          <div class="st-hits" hidden>
+            <div class="st-hits-head"><span class="st-meta st-hits-summary"></span><button type="button" class="st-copy-grep">grep 結果をコピー</button></div>
+            <div class="st-hits-list"></div>
+          </div>
           <div class="st-row">
             <span class="st-selected">選んだファイル：なし</span>
             <button type="button" class="st-copy-selected st-primary" disabled>選んだファイルをコピー</button>
@@ -91,6 +106,8 @@
       expand: q('.st-expand'), collapse: q('.st-collapse'), tree: q('.st-tree'), selected: q('.st-selected'), copySelected: q('.st-copy-selected'),
       parts: q('.st-parts'), warn: q('.st-warn'), preview: q('.st-preview'), copyCurrent: q('.st-copy-current'), currentName: q('.st-current-name'),
       findInput: q('.st-find-input'), findClear: q('.st-find-clear'), findCount: q('.st-find-count'),
+      findMode: q('.st-find-mode'), grepOpts: q('.st-grep-opts'), grepCase: q('.st-grep-case'), grepRe: q('.st-grep-re'),
+      hits: q('.st-hits'), hitsSummary: q('.st-hits-summary'), hitsList: q('.st-hits-list'), copyGrep: q('.st-copy-grep'),
     };
 
     let rootName = '';      // 選んだフォルダの名前
@@ -111,8 +128,84 @@
       const body = t.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
       return new RegExp(wild && !t.includes('/') ? '^' + body + '$' : body, 'i');
     }
+    const isGrep = () => el.findMode.value === 'grep';
     function matches(e){
+      if (isGrep()) return grepResult().hits.has(e.path);
       return findTerms().every(t => termRegex(t).test(t.includes('/') ? e.path : e.path.split('/').pop()));
+    }
+
+    // ---------- 中身で探す（grep） ----------
+    // 読み込んだときに中身はメモリーにあるので、それを探すだけ。空白もそのまま探す（ソースの中の言葉は空白を含むことがあるため）
+    const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    let grepMemo = null;
+    function grepRegex(){
+      const q = findQuery.trim();
+      const flags = 'g' + (el.grepCase.checked ? '' : 'i');
+      try { return new RegExp(el.grepRe.checked ? q : q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags); }
+      catch (e) { return null; }
+    }
+    // 結果：{ hits: path → [{ n: 行番号, text }], count: 件数, error }。入力や設定が同じなら作り直さない
+    function grepResult(){
+      const key = [findQuery.trim(), el.grepCase.checked, el.grepRe.checked].join('\u0001');
+      if (grepMemo && grepMemo.key === key && grepMemo.entries === entries) return grepMemo;
+      const hits = new Map();
+      let count = 0;
+      const re = grepRegex();
+      if (re) {
+        const test = new RegExp(re.source, re.flags.replace('g', ''));
+        for (const e of entries) {
+          if (e.skipped || !e.text) continue;
+          const found = [];
+          e.text.split('\n').forEach((line, i) => { if (test.test(line)) found.push({ n: i + 1, text: line }); });
+          if (found.length) { hits.set(e.path, found); count += found.length; }
+        }
+      }
+      grepMemo = { key, entries, hits, count, error: !re };
+      return grepMemo;
+    }
+    // 一致した部分に <mark> を付ける（長さ 0 の一致は飛ばす）
+    function markText(text, re){
+      let out = '', last = 0;
+      for (const m of text.matchAll(re)) {
+        if (!m[0]) continue;
+        out += escHtml(text.slice(last, m.index)) + '<mark>' + escHtml(m[0]) + '</mark>';
+        last = m.index + m[0].length;
+      }
+      return out + escHtml(text.slice(last));
+    }
+    // tree の下の、一致した行の一覧
+    function renderHits(){
+      const on = isGrep() && !!findQuery.trim();
+      el.hits.hidden = !on;
+      if (!on) { el.hitsList.innerHTML = ''; return; }
+      const r = grepResult();
+      el.copyGrep.disabled = !r.count;
+      if (r.error || !r.count) { el.hitsSummary.textContent = ''; el.hitsList.innerHTML = ''; el.hits.hidden = true; return; }
+      el.hitsSummary.textContent = `ファイル ${r.hits.size} 個、${r.count.toLocaleString()} 件` + (r.count > GREP_SHOW ? `（ここには最初の ${GREP_SHOW.toLocaleString()} 件だけ出します。コピーには全部入ります）` : '');
+      const re = grepRegex();
+      const html = [];
+      let shown = 0;
+      for (const [path, found] of r.hits) {
+        if (shown >= GREP_SHOW) break;
+        html.push(`<div class="st-hit-file" data-path="${escHtml(path)}">${escHtml(path)} <span class="st-meta">${found.length} 件</span></div>`);
+        for (const h of found) {
+          if (shown++ >= GREP_SHOW) break;
+          const t = h.text.trim();
+          html.push(`<div class="st-hit-line" data-path="${escHtml(path)}" data-line="${h.n}"><span class="st-ln">${h.n}</span><span class="st-hit-text">${markText(t.length > 300 ? t.slice(0, 300) + '…' : t, re)}</span></div>`);
+        }
+      }
+      el.hitsList.innerHTML = html.join('');
+    }
+    // grep 結果の文字（チャットに貼る用）
+    function grepText(){
+      const r = grepResult();
+      const opts = [el.grepCase.checked && '大文字・小文字を区別', el.grepRe.checked && '正規表現'].filter(Boolean);
+      const lines = [`【src-tree】${rootName} の中身を「${findQuery.trim()}」で検索（ファイル ${r.hits.size} 個、${r.count.toLocaleString()} 件）` + (opts.length ? `（${opts.join('、')}）` : '')];
+      for (const [path, found] of r.hits) {
+        lines.push('', path);
+        for (const h of found) lines.push(`  ${h.n}: ${h.text.trim()}`);
+      }
+      return lines.join('\n') + '\n';
     }
     const visibleEntries = () => findQuery.trim() ? entries.filter(matches) : entries;
     // 探している間は、閉じたフォルダも開いて見せる（見つかったものが隠れないように）
@@ -136,7 +229,7 @@
       rootName = ''; dirHandle = null; allRefs = []; entries = [];
       cache.clear(); selected.clear(); collapsed.clear(); current = null;
       el.findInput.value = ''; findQuery = ''; el.findClear.hidden = true; el.findInput.disabled = true;
-      el.findCount.textContent = ''; el.selectAll.textContent = 'すべて選ぶ';
+      el.findCount.textContent = ''; el.selectAll.textContent = 'すべて選ぶ'; grepMemo = null;
       el.dirInput.value = ''; el.preview.value = ''; el.currentName.textContent = ''; el.copyCurrent.disabled = true;
       el.reload.hidden = true; el.clear.hidden = true;
       renderTree();
@@ -265,7 +358,41 @@
     el.exclude.onchange = () => { if (dirHandle) readFromHandle(); else if (allRefs.length) applyFilter(); };
     el.enc.onchange = () => allRefs.length && applyFilter();
     el.merge.onchange = renderTree;
-    el.findInput.oninput = () => { findQuery = el.findInput.value; el.findClear.hidden = !findQuery; renderTree(); };
+    let findTimer = 0;
+    el.findInput.oninput = () => {
+      el.findClear.hidden = !el.findInput.value;
+      clearTimeout(findTimer);
+      const run = () => { findQuery = el.findInput.value; renderTree(); };
+      if (isGrep() && el.findInput.value) findTimer = setTimeout(run, 250); else run();
+    };
+    el.findMode.onchange = () => {
+      el.findInput.placeholder = PH[el.findMode.value];
+      el.grepOpts.hidden = !isGrep();
+      renderTree();
+      el.findInput.focus();
+    };
+    el.grepCase.onchange = el.grepRe.onchange = renderTree;
+    el.copyGrep.onclick = async () => { const t = grepText(); el.preview.value = t; await copy(t, el.copyGrep, 'grep 結果をコピー'); };
+    // 一覧の行を押したら、下の欄にそのファイルを出して、その行に飛ぶ
+    el.hitsList.addEventListener('click', e => {
+      const d = e.target.closest('[data-path]');
+      if (!d) return;
+      showFile(d.dataset.path);
+      if (d.dataset.line) jumpToLine(Number(d.dataset.line));
+    });
+    // 下の欄の n 行目（ソースの行番号）を選んで見えるようにする。先頭の2行は見出しとコードの囲み
+    function jumpToLine(n){
+      const pv = el.preview;
+      const ls = pv.value.split('\n');
+      const i = n + 1;
+      if (i >= ls.length) return;
+      const start = ls.slice(0, i).join('\n').length + 1;
+      pv.scrollIntoView({ block: 'nearest' });
+      pv.focus({ preventScroll: true });
+      pv.setSelectionRange(start, start + ls[i].length);
+      const lh = parseFloat(getComputedStyle(pv).lineHeight) || 18;
+      pv.scrollTop = Math.max(0, (i - 3) * lh);
+    }
     el.findInput.onkeydown = e => { if (e.key === 'Escape') { el.findInput.value = ''; el.findInput.oninput(); } };
     el.findClear.onclick = () => { el.findInput.value = ''; el.findInput.oninput(); el.findInput.focus(); };
     el.showLines.onchange = renderTree;
@@ -301,6 +428,7 @@
       if (!has) {
         el.tree.innerHTML = `<div class="st-empty">${allRefs.length ? '対象のファイルがありません。左の「対象の拡張子」や「外すフォルダ」を確かめてください。' : 'フォルダを選ぶと、ここに tree が出ます。'}</div>`;
         el.summary.textContent = '';
+        renderHits();
         updateSelection();
         return;
       }
@@ -308,9 +436,11 @@
       const shown = visibleEntries();
       const finding = !!findQuery.trim();
       el.selectAll.textContent = finding ? '見つかったものを選ぶ' : 'すべて選ぶ';
-      el.findCount.textContent = finding ? `${shown.length} 個見つかりました` : '';
+      const gr = finding && isGrep() ? grepResult() : null;
+      el.findCount.textContent = !finding ? '' : gr ? (gr.error ? '正規表現の書き方が正しくありません' : `${shown.length} 個のファイルで ${gr.count.toLocaleString()} 件`) : `${shown.length} 個見つかりました`;
+      renderHits();
       if (finding && !shown.length) {
-        el.tree.innerHTML = `<div class="st-empty">「${findQuery.trim().replace(/</g, '&lt;')}」に一致するファイルはありません。</div>`;
+        el.tree.innerHTML = `<div class="st-empty">${gr && gr.error ? '正規表現の書き方が正しくありません。' : `「${findQuery.trim().replace(/</g, '&lt;')}」に一致する${gr ? '行' : 'ファイル'}はありません。`}</div>`;
         [el.copyTree, el.selectAll, el.expand, el.collapse].forEach(b => b.disabled = true);
         updateSelection();
         return;
@@ -319,7 +449,7 @@
       const total = entries.reduce((s, e) => s + e.lines, 0);
       el.summary.textContent = `ファイル ${entries.length} 個、${total.toLocaleString()} 行`;
       const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      const plain = findTerms().filter(t => !/[*?\/]/.test(t)).map(t => t.replace(/[.+^${}()|[\]\\]/g, '\\$&'));
+      const plain = isGrep() ? [] : findTerms().filter(t => !/[*?\/]/.test(t)).map(t => t.replace(/[.+^${}()|[\]\\]/g, '\\$&'));
       const highlight = name => {
         if (!plain.length) return esc(name);
         return name.split(new RegExp(`(${plain.join('|')})`, 'gi')).map((part, i) => i % 2 ? `<mark>${esc(part)}</mark>` : esc(part)).join('');
@@ -328,6 +458,7 @@
         `<input type="checkbox" data-file="${esc(e.path)}"${selected.has(e.path) ? ' checked' : ''}>` +
         `<span class="st-name">${highlight(e.path.split('/').pop())}</span>` +
         `<span class="st-meta">${e.skipped ? '（大きすぎるので読み込まない）' : `(${e.lines.toLocaleString()}行)`}</span>` +
+        (gr && gr.hits.has(e.path) ? `<span class="st-hit-count">${gr.hits.get(e.path).length} 件</span>` : '') +
         (e.enc === 'Shift_JIS' ? '<span class="st-sjis" title="Shift_JIS で読みました">SJIS</span>' : e.enc === 'EUC-JP' ? '<span class="st-sjis" title="EUC-JP で読みました">EUC</span>' : '') + '</span></li>';
       const dirLi = (node, label) => {
         const { node: n, name } = merged(node);
@@ -408,7 +539,9 @@
       else walk(top, '');
       const total = entries.reduce((s, e) => s + e.lines, 0);
       lines.push('', `（ファイル ${entries.length} 個、合計 ${total.toLocaleString()} 行）`);
-      if (findQuery.trim()) lines.push(`（「${findQuery.trim()}」で絞り込み：${visibleEntries().length} 個を表示）`);
+      if (findQuery.trim()) lines.push(isGrep()
+        ? `（中身に「${findQuery.trim()}」を含むファイルで絞り込み：${visibleEntries().length} 個を表示）`
+        : `（「${findQuery.trim()}」で絞り込み：${visibleEntries().length} 個を表示）`);
       return lines.join('\n');
     }
     el.copyTree.onclick = async () => { const t = treeText(); el.preview.value = t; await copy(t, el.copyTree, 'tree をコピー'); };
