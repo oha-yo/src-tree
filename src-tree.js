@@ -29,6 +29,7 @@
             <button type="button" class="st-reload" hidden title="git pull などでファイルが変わったら、選び直さずに読み込み直せます">読み込み直し</button>
             <button type="button" class="st-clear" hidden title="読み込んだファイルを、このページから消します（設定はそのまま）">クリア</button>
           </div>
+          <div class="st-folder" hidden></div>
           <input type="file" class="st-dir-input" webkitdirectory multiple hidden>
           <p class="st-note">ファイルはこのブラウザの中で読むだけで、どこにも送りません。${canPickDir ? '' : 'ブラウザによっては「アップロードしますか」と聞かれますが、実際には送りません。'}</p>
           <progress class="st-progress" hidden></progress>
@@ -99,7 +100,7 @@
 
     const q = s => root.querySelector(s);
     const el = {
-      pick: q('.st-pick'), reload: q('.st-reload'), clear: q('.st-clear'), dirInput: q('.st-dir-input'), progress: q('.st-progress'), status: q('.st-status'),
+      pick: q('.st-pick'), reload: q('.st-reload'), clear: q('.st-clear'), folder: q('.st-folder'), dirInput: q('.st-dir-input'), progress: q('.st-progress'), status: q('.st-status'),
       exts: [...root.querySelectorAll('.st-exts input')], extMore: q('.st-ext-more'), exclude: q('.st-exclude'), enc: q('.st-enc'),
       merge: q('.st-merge'), showLines: q('.st-show-lines'), partLines: q('.st-part-lines'),
       summary: q('.st-summary'), copyTree: q('.st-copy-tree'), selectAll: q('.st-select-all'), selectNone: q('.st-select-none'),
@@ -231,7 +232,7 @@
       el.findInput.value = ''; findQuery = ''; el.findClear.hidden = true; el.findInput.disabled = true;
       el.findCount.textContent = ''; el.selectAll.textContent = 'すべて選ぶ'; grepMemo = null;
       el.dirInput.value = ''; el.preview.value = ''; el.currentName.textContent = ''; el.copyCurrent.disabled = true;
-      el.reload.hidden = true; el.clear.hidden = true;
+      el.reload.hidden = true; el.clear.hidden = true; el.folder.hidden = true; el.folder.innerHTML = '';
       renderTree();
       setStatus('クリアしました。');
     };
@@ -303,7 +304,29 @@
       const skipped = entries.filter(e => e.skipped).length;
       setStatus(`「${rootName}」を読み込みました。ファイル ${entries.length} 個、合計 ${total.toLocaleString()} 行` +
         (sjis || euc ? `（${[sjis && `Shift_JIS ${sjis} 個`, euc && `EUC-JP ${euc} 個`].filter(Boolean).join('、')}）` : '') + (skipped ? `。大きすぎて読み込まなかったファイル ${skipped} 個` : ''));
+      renderFolder();
       renderTree();
+    }
+
+    // 選んだフォルダを目立つように出す（ブラウザはフルパスを教えないので、名前と中身で「あのフォルダだ」と確かめてもらう）
+    function renderFolder(){
+      const top = new Map();   // すぐ下のもの → フォルダなら true
+      const ex = excludeSet();
+      const refs = allRefs.filter(r => !r.path.split('/').slice(0, -1).some(d => ex.has(d.toLowerCase())));
+      for (const r of refs) {
+        const [first, ...rest] = r.path.split('/');
+        if (rest.length) top.set(first, true); else if (!top.has(first)) top.set(first, false);
+      }
+      const items = [...top].sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0])).map(([n, d]) => d ? n + '/' : n);
+      const MAX = 10;
+      const newest = entries.reduce((m, e) => Math.max(m, e.lastModified || 0), 0);
+      const fmt = t => { const d = new Date(t), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+      el.folder.innerHTML =
+        `<div class="st-folder-name">📁 ${escHtml(rootName)}</div>` +
+        `<div class="st-folder-items">${items.slice(0, MAX).map(escHtml).join('　')}${items.length > MAX ? `　ほか ${items.length - MAX} 個` : ''}</div>` +
+        `<div class="st-meta">対象のファイル ${entries.length} 個（外すフォルダ以外のファイル ${refs.length} 個のうち）` +
+        (newest ? `。一番新しい更新：${fmt(newest)}` : '') + '</div>';
+      el.folder.hidden = false;
     }
 
     async function readEntry(r){
