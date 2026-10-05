@@ -21,6 +21,7 @@
           <div class="st-row" style="margin-top:0">
             <button type="button" class="st-pick st-primary st-big">フォルダを選ぶ</button>
             <button type="button" class="st-reload" hidden title="git pull などでファイルが変わったら、選び直さずに読み込み直せます">読み込み直し</button>
+            <button type="button" class="st-clear" hidden title="読み込んだファイルを、このページから消します（設定はそのまま）">クリア</button>
           </div>
           <input type="file" class="st-dir-input" webkitdirectory multiple hidden>
           <p class="st-note">ファイルはこのブラウザの中で読むだけで、どこにも送りません。${canPickDir ? '' : 'ブラウザによっては「アップロードしますか」と聞かれますが、実際には送りません。'}</p>
@@ -83,7 +84,7 @@
 
     const q = s => root.querySelector(s);
     const el = {
-      pick: q('.st-pick'), reload: q('.st-reload'), dirInput: q('.st-dir-input'), progress: q('.st-progress'), status: q('.st-status'),
+      pick: q('.st-pick'), reload: q('.st-reload'), clear: q('.st-clear'), dirInput: q('.st-dir-input'), progress: q('.st-progress'), status: q('.st-status'),
       exts: [...root.querySelectorAll('.st-exts input')], extMore: q('.st-ext-more'), exclude: q('.st-exclude'), enc: q('.st-enc'),
       merge: q('.st-merge'), showLines: q('.st-show-lines'), partLines: q('.st-part-lines'),
       summary: q('.st-summary'), copyTree: q('.st-copy-tree'), selectAll: q('.st-select-all'), selectNone: q('.st-select-none'),
@@ -130,6 +131,17 @@
       }
     };
     el.reload.onclick = () => readFromHandle();
+    // クリア：読み込んだファイルの中身をこのページから消して、最初の状態に戻す（拡張子などの設定はそのまま）
+    el.clear.onclick = () => {
+      rootName = ''; dirHandle = null; allRefs = []; entries = [];
+      cache.clear(); selected.clear(); collapsed.clear(); current = null;
+      el.findInput.value = ''; findQuery = ''; el.findClear.hidden = true; el.findInput.disabled = true;
+      el.findCount.textContent = ''; el.selectAll.textContent = 'すべて選ぶ';
+      el.dirInput.value = ''; el.preview.value = ''; el.currentName.textContent = ''; el.copyCurrent.disabled = true;
+      el.reload.hidden = true; el.clear.hidden = true;
+      renderTree();
+      setStatus('クリアしました。');
+    };
     el.dirInput.onchange = async () => {
       const files = [...el.dirInput.files];
       if (!files.length) return;
@@ -189,6 +201,7 @@
         if (++i % 20 === 0) { el.progress.value = i; setStatus(`ファイルを読み込んでいます…（${i} / ${targets.length}）`); }
       }
       entries = out;
+      el.clear.hidden = false;
       for (const p of [...selected]) if (!entries.some(e => e.path === p)) selected.delete(p);
       busy(false);
       const total = entries.reduce((s, e) => s + e.lines, 0);
@@ -499,7 +512,7 @@
     }
     function setStatus(msg){ el.status.textContent = msg; }
     function busy(on, msg){
-      el.pick.disabled = on; el.reload.disabled = on;
+      el.pick.disabled = on; el.reload.disabled = on; el.clear.disabled = on;
       el.progress.hidden = !on;
       if (on) { el.progress.removeAttribute('value'); if (msg) setStatus(msg); }
     }
