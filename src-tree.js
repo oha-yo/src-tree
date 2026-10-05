@@ -57,6 +57,11 @@
 
         <section class="st-card">
           <div class="st-head"><span class="st-title">2. tree とソース</span><span class="st-meta st-summary"></span></div>
+          <div class="st-find">
+            <input type="text" class="st-find-input" placeholder="ファイル名で探す（例：OrderDao、*Action.java、order dao、batch/）" disabled>
+            <button type="button" class="st-find-clear" hidden title="絞り込みをやめる">×</button>
+            <span class="st-meta st-find-count"></span>
+          </div>
           <div class="st-tools">
             <button type="button" class="st-copy-tree st-primary" disabled title="画面で見えているとおりにコピーします（閉じているフォルダは、中身を省いて1行にします）">tree をコピー</button>
             <button type="button" class="st-select-all" disabled>すべて選ぶ</button>
@@ -84,6 +89,7 @@
       summary: q('.st-summary'), copyTree: q('.st-copy-tree'), selectAll: q('.st-select-all'), selectNone: q('.st-select-none'),
       expand: q('.st-expand'), collapse: q('.st-collapse'), tree: q('.st-tree'), selected: q('.st-selected'), copySelected: q('.st-copy-selected'),
       parts: q('.st-parts'), warn: q('.st-warn'), preview: q('.st-preview'), copyCurrent: q('.st-copy-current'), currentName: q('.st-current-name'),
+      findInput: q('.st-find-input'), findClear: q('.st-find-clear'), findCount: q('.st-find-count'),
     };
 
     let rootName = '';      // 選んだフォルダの名前
@@ -94,6 +100,22 @@
     const selected = new Set();  // 選んだファイルの path
     const collapsed = new Set(); // 閉じているフォルダの path（作り直しても開け閉めを保つ。tree のコピーにも使う）
     let current = null;          // ファイル名を押して中身を表示しているファイル
+    let findQuery = '';          // 「ファイル名で探す」に入れた文字
+
+    // ---------- ファイル名で探す ----------
+    // 空白で区切ると「かつ」。* と ? が使える（* があるときはファイル名全体で比べる）。/ を含むとパス全体で探す。大文字・小文字は区別しない
+    const findTerms = () => findQuery.trim().split(/\s+/).filter(Boolean);
+    function termRegex(t){
+      const wild = /[*?]/.test(t);
+      const body = t.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
+      return new RegExp(wild && !t.includes('/') ? '^' + body + '$' : body, 'i');
+    }
+    function matches(e){
+      return findTerms().every(t => termRegex(t).test(t.includes('/') ? e.path : e.path.split('/').pop()));
+    }
+    const visibleEntries = () => findQuery.trim() ? entries.filter(matches) : entries;
+    // 探している間は、閉じたフォルダも開いて見せる（見つかったものが隠れないように）
+    const isCollapsed = path => !findQuery.trim() && collapsed.has(path);
 
     // ---------- フォルダを選ぶ ----------
     el.pick.onclick = async () => {
@@ -230,6 +252,9 @@
     el.exclude.onchange = () => { if (dirHandle) readFromHandle(); else if (allRefs.length) applyFilter(); };
     el.enc.onchange = () => allRefs.length && applyFilter();
     el.merge.onchange = renderTree;
+    el.findInput.oninput = () => { findQuery = el.findInput.value; el.findClear.hidden = !findQuery; renderTree(); };
+    el.findInput.onkeydown = e => { if (e.key === 'Escape') { el.findInput.value = ''; el.findInput.oninput(); } };
+    el.findClear.onclick = () => { el.findInput.value = ''; el.findInput.oninput(); el.findInput.focus(); };
     el.showLines.onchange = renderTree;
     el.partLines.onchange = updateSelection;
 
@@ -237,7 +262,7 @@
     // path の一覧から、フォルダの入れ子を作る。node = { name, path, dirs: Map, files: [] }
     function buildTree(){
       const top = { name: rootName, path: '', dirs: new Map(), files: [] };
-      for (const e of entries) {
+      for (const e of visibleEntries()) {
         const parts = e.path.split('/');
         let node = top;
         for (let i = 0; i < parts.length - 1; i++) {
@@ -266,19 +291,35 @@
         updateSelection();
         return;
       }
+      el.findInput.disabled = false;
+      const shown = visibleEntries();
+      const finding = !!findQuery.trim();
+      el.selectAll.textContent = finding ? '見つかったものを選ぶ' : 'すべて選ぶ';
+      el.findCount.textContent = finding ? `${shown.length} 個見つかりました` : '';
+      if (finding && !shown.length) {
+        el.tree.innerHTML = `<div class="st-empty">「${findQuery.trim().replace(/</g, '&lt;')}」に一致するファイルはありません。</div>`;
+        [el.copyTree, el.selectAll, el.expand, el.collapse].forEach(b => b.disabled = true);
+        updateSelection();
+        return;
+      }
       const top = buildTree();
       const total = entries.reduce((s, e) => s + e.lines, 0);
       el.summary.textContent = `ファイル ${entries.length} 個、${total.toLocaleString()} 行`;
       const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const plain = findTerms().filter(t => !/[*?\/]/.test(t)).map(t => t.replace(/[.+^${}()|[\]\\]/g, '\\$&'));
+      const highlight = name => {
+        if (!plain.length) return esc(name);
+        return name.split(new RegExp(`(${plain.join('|')})`, 'gi')).map((part, i) => i % 2 ? `<mark>${esc(part)}</mark>` : esc(part)).join('');
+      };
       const fileLi = e => `<li class="st-file${current === e.path ? ' st-current' : ''}" data-path="${esc(e.path)}"><span class="st-node"><span class="st-toggle"></span>` +
         `<input type="checkbox" data-file="${esc(e.path)}"${selected.has(e.path) ? ' checked' : ''}>` +
-        `<span class="st-name">${esc(e.path.split('/').pop())}</span>` +
+        `<span class="st-name">${highlight(e.path.split('/').pop())}</span>` +
         `<span class="st-meta">${e.skipped ? '（大きすぎるので読み込まない）' : `(${e.lines.toLocaleString()}行)`}</span>` +
         (e.enc === 'Shift_JIS' ? '<span class="st-sjis" title="Shift_JIS で読みました">SJIS</span>' : e.enc === 'EUC-JP' ? '<span class="st-sjis" title="EUC-JP で読みました">EUC</span>' : '') + '</span></li>';
       const dirLi = (node, label) => {
         const { node: n, name } = merged(node);
         const shown = label ?? name;
-        const closed = collapsed.has(n.path);
+        const closed = isCollapsed(n.path);
         return `<li class="st-dir${closed ? ' st-collapsed' : ''}" data-dir="${esc(n.path)}"><span class="st-node"><span class="st-toggle">${closed ? '▸' : '▾'}</span>` +
           `<input type="checkbox" data-dir="${esc(n.path)}">` +
           `<span class="st-name">${esc(shown)}/</span><span class="st-meta">${filesUnder(n).length} 個</span></span>` +
@@ -314,7 +355,7 @@
       }
       if (t.classList.contains('st-name') && t.closest('.st-file')) showFile(t.closest('.st-file').dataset.path);
     });
-    el.selectAll.onclick = () => { entries.forEach(e => !e.skipped && selected.add(e.path)); renderTree(); };
+    el.selectAll.onclick = () => { visibleEntries().forEach(e => !e.skipped && selected.add(e.path)); renderTree(); };
     el.selectNone.onclick = () => { selected.clear(); renderTree(); };
     function setCollapsed(li, on){
       li.classList.toggle('st-collapsed', on);
@@ -336,7 +377,7 @@
           const branch = prefix + (last ? '└─ ' : '├─ ');
           if (it.d) {
             const { node: n, name } = merged(it.d);
-            if (collapsed.has(n.path)) {
+            if (isCollapsed(n.path)) {
               // 画面で閉じているフォルダは、中身を省いて1行にする（画面で見えているとおりにコピーする）
               const fs = filesUnder(n);
               lines.push(branch + name + `/  … (ファイル ${fs.length} 個、${fs.reduce((s, e) => s + e.lines, 0).toLocaleString()} 行)`);
@@ -350,10 +391,11 @@
           }
         });
       };
-      if (collapsed.has(top.path)) lines[0] += `  … (ファイル ${entries.length} 個)`;   // 一番上まで閉じているとき
+      if (isCollapsed(top.path)) lines[0] += `  … (ファイル ${entries.length} 個)`;   // 一番上まで閉じているとき
       else walk(top, '');
       const total = entries.reduce((s, e) => s + e.lines, 0);
       lines.push('', `（ファイル ${entries.length} 個、合計 ${total.toLocaleString()} 行）`);
+      if (findQuery.trim()) lines.push(`（「${findQuery.trim()}」で絞り込み：${visibleEntries().length} 個を表示）`);
       return lines.join('\n');
     }
     el.copyTree.onclick = async () => { const t = treeText(); el.preview.value = t; await copy(t, el.copyTree, 'tree をコピー'); };
@@ -399,7 +441,9 @@
     function updateSelection(){
       const { files, parts, limit, big } = buildParts();
       const lines = files.reduce((s, e) => s + e.lines, 0);
-      el.selected.textContent = files.length ? `選んだファイル：${files.length} 個、${lines.toLocaleString()} 行` + (parts.length > 1 ? ` → ${parts.length} 回に分けてコピー` : '') : '選んだファイル：なし';
+      const hiddenSel = findQuery.trim() ? files.filter(e => !matches(e)).length : 0;
+      el.selected.textContent = files.length ? `選んだファイル：${files.length} 個、${lines.toLocaleString()} 行` + (parts.length > 1 ? ` → ${parts.length} 回に分けてコピー` : '') +
+        (hiddenSel ? `（うち ${hiddenSel} 個は絞り込みで見えていない）` : '') : '選んだファイル：なし';
       el.copySelected.disabled = !files.length;
       el.copySelected.hidden = parts.length > 1;
       el.parts.innerHTML = parts.length > 1 ? parts.map((_, i) => `<button type="button" data-part="${i}" class="st-primary">${i + 1}/${parts.length} をコピー</button>`).join('') : '';

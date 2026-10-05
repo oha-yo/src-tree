@@ -33,6 +33,13 @@
 .src-tree-tool details summary{cursor:pointer;color:var(--st-sub)}
 .src-tree-tool progress{width:100%;margin-top:6px}
 
+/* ファイル名で探す */
+.src-tree-tool .st-find{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.src-tree-tool .st-find input[type=text]{flex:1;min-width:0}
+.src-tree-tool .st-find button{padding:2px 10px}
+.src-tree-tool .st-find .st-meta{white-space:nowrap}
+.src-tree-tool .st-tree mark{background:#ffe58a;color:inherit;padding:0;border-radius:2px}
+
 /* tree */
 .src-tree-tool .st-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
 .src-tree-tool .st-tree{border:1px solid var(--st-line);border-radius:6px;padding:8px 10px;max-height:520px;overflow:auto;font-family:Consolas,"BIZ UDGothic","MS Gothic",monospace;font-size:13px;line-height:1.7;background:var(--st-soft)}
