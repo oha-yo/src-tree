@@ -1,3 +1,4 @@
+// https://github.com/oha-yo/src-tree
 // src-tree：ローカルのプロジェクトのフォルダを選ぶと、解析に必要なファイルだけの tree を表示し、
 // tree やソースを、チャット型 AI（Copilot など）に貼りやすい形でコピーする。
 // 置き方：<div class="src-tree-tool"></div> のあとで src-tree.js を読み込む。画面の部品はこの JS が箱の中に作る。
