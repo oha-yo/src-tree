@@ -1,5 +1,6 @@
 # 試験用の「古い Java プロジェクト風」のフォルダ（test/sample-project）を作る。
 #   python test/make_sample.py
+# 同じ中身を、回帰テスト（test/regress.html）用に test/sample-data.js にも書き出す。
 # Shift_JIS のファイル、上限（2500行）を超える大きなファイル、外すべきもの（.class、bin/、.git/）を含む。
 import os, shutil
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample-project")
@@ -92,3 +93,18 @@ write(".git/config", "[core]\n")
 write(".settings/org.eclipse.jdt.core.prefs", "eclipse=1\n")
 write("lib/ojdbc6.jar", "JAR")
 print("作成しました:", base)
+
+# 回帰テスト用のデータ（ブラウザだけで試せるよう、ファイルの中身を Base64 で JS に入れる）
+import base64, json
+data = []
+for dirpath, _, names in os.walk(base):
+    for n in names:
+        full = os.path.join(dirpath, n)
+        with open(full, "rb") as f:
+            data.append({"path": os.path.relpath(full, base).replace(os.sep, "/"), "b64": base64.b64encode(f.read()).decode()})
+data.sort(key=lambda x: x["path"])
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample-data.js")
+with open(out, "w", encoding="utf-8", newline="\n") as f:
+    f.write("// test/make_sample.py が作る。回帰テスト（regress.html）で使う「古い Java プロジェクト風」のファイル\n")
+    f.write("window.SAMPLE_FILES = [\n" + ",\n".join(json.dumps(d) for d in data) + "\n];\n")
+print("作成しました:", out)

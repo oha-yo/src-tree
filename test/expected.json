@@ -1,0 +1,671 @@
+{
+  "before": {
+    "status": "",
+    "folder": null,
+    "summary": "",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：なし",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [],
+    "empty": "フォルダを選ぶと、ここに tree が出ます。ファイルにチェックを付けると、そのソースをまとめてコピーできます。ファイル名を押すと、下に中身が出ます。",
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear:hidden .st-copy-tree:disabled .st-select-all:disabled .st-copy-selected:disabled .st-copy-current:disabled .st-find-clear:hidden"
+  },
+  "loaded": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：なし",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current:disabled .st-find-clear:hidden"
+  },
+  "treeText": "sample-project/\n├─ conf/\n│   └─ db.properties (1行)\n├─ src/com/example/order/\n│   ├─ batch/\n│   │   ├─ AbstractBatch.java (9行)\n│   │   └─ DailyOrderBatch.java (18行)\n│   ├─ dao/\n│   │   └─ OrderDao.java (8行)\n│   ├─ util/\n│   │   └─ DateUtil.java (9行)\n│   └─ web/\n│       └─ OrderListAction.java (3003行)\n├─ WebContent/\n│   ├─ order/\n│   │   └─ list.jsp (2行)\n│   └─ WEB-INF/\n│       ├─ struts-config.xml (6行)\n│       └─ web.xml (4行)\n└─ build.xml (1行)\n\n（ファイル 10 個、合計 3,061 行）",
+  "treeCollapsed": "sample-project/\n├─ conf/\n│   └─ db.properties (1行)\n├─ src/com/example/order/\n│   ├─ batch/\n│   │   ├─ AbstractBatch.java (9行)\n│   │   └─ DailyOrderBatch.java (18行)\n│   ├─ dao/\n│   │   └─ OrderDao.java (8行)\n│   ├─ util/\n│   │   └─ DateUtil.java (9行)\n│   └─ web/\n│       └─ OrderListAction.java (3003行)\n├─ WebContent/  … (ファイル 3 個、12 行)\n└─ build.xml (1行)\n\n（ファイル 10 個、合計 3,061 行）",
+  "treeAllCollapsed": "sample-project/\n├─ conf/  … (ファイル 1 個、1 行)\n├─ src/com/example/order/  … (ファイル 5 個、3,047 行)\n├─ WebContent/  … (ファイル 3 個、12 行)\n└─ build.xml (1行)\n\n（ファイル 10 個、合計 3,061 行）",
+  "showFile": {
+    "preview": {
+      "len": 322,
+      "head": "### src/com/example/order/util/DateUtil.java（9行）\n```java\npackage com.example.order.util;\n\n/**\n * 日付のユーティリティ（EUC-JP で保存され",
+      "hash": "acb9ac4a"
+    },
+    "name": "src/com/example/order/util/DateUtil.java（9行、EUC-JP）"
+  },
+  "copyCurrent": {
+    "len": 322,
+    "head": "### src/com/example/order/util/DateUtil.java（9行）\n```java\npackage com.example.order.util;\n\n/**\n * 日付のユーティリティ（EUC-JP で保存され",
+    "hash": "acb9ac4a"
+  },
+  "selectAll": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：10 個、3,061 行 → 3 回に分けてコピー",
+    "parts": [
+      "1/3 をコピー",
+      "2/3 をコピー",
+      "3/3 をコピー"
+    ],
+    "copySelectedHidden": true,
+    "warn": "上限（2,500 行）を超えるファイルは、行で区切ってコピーします：OrderListAction.java",
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:hidden .st-copy-current .st-find-clear:hidden"
+  },
+  "partTexts": [
+    {
+      "len": 1716,
+      "head": "【src-tree】sample-project のソース 1/3（ファイル 6 個、46 行）\n\n### build.xml（1行）\n```xml\n<project name=\"order\" default=\"build\"><target",
+      "hash": "7d0fa36c"
+    },
+    {
+      "len": 44035,
+      "head": "【src-tree】sample-project のソース 2/3（ファイル 1 個、2,500 行）\n\n### src/com/example/order/web/OrderListAction.java（1〜2500行目／全3003行）",
+      "hash": "3341cf9f"
+    },
+    {
+      "len": 9790,
+      "head": "【src-tree】sample-project のソース 3/3（ファイル 4 個、515 行）\n\n### src/com/example/order/web/OrderListAction.java（2501〜3003行目／全3003行",
+      "hash": "851ca942"
+    }
+  ],
+  "limit1000": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：10 個、3,061 行 → 5 回に分けてコピー",
+    "parts": [
+      "1/5 をコピー",
+      "2/5 をコピー",
+      "3/5 をコピー",
+      "4/5 をコピー",
+      "5/5 をコピー"
+    ],
+    "copySelectedHidden": true,
+    "warn": "上限（1,000 行）を超えるファイルは、行で区切ってコピーします：OrderListAction.java",
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:hidden .st-copy-current .st-find-clear:hidden"
+  },
+  "select3": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：3 個、28 行",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected .st-copy-current .st-find-clear:hidden"
+  },
+  "copySelected": {
+    "len": 964,
+    "head": "【src-tree】sample-project のソース（ファイル 3 個、28 行）\n\n### conf/db.properties（1行）\n```properties\ndb.url=jdbc:oracle:thin:@localhos",
+    "hash": "ded8a3be"
+  },
+  "dirCheck": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：1 個、1 行",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected .st-copy-current .st-find-clear:hidden"
+  },
+  "find": {
+    "dao": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "1 個見つかりました",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "OrderDao.java (8行)"
+      ],
+      "empty": null,
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "*Action.java": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "1 個見つかりました",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "OrderListAction.java (3,003行)"
+      ],
+      "empty": null,
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "order batch": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "1 個見つかりました",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "DailyOrderBatch.java (18行) SJIS"
+      ],
+      "empty": null,
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "WEB-INF/": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "2 個見つかりました",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "struts-config.xml (6行)",
+        "web.xml (4行)"
+      ],
+      "empty": null,
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "xyz": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "0 個見つかりました",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [],
+      "empty": "「xyz」に一致するファイルはありません。",
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree:disabled .st-select-all:disabled .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "D?teUtil.java": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "1 個見つかりました",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "DateUtil.java (9行) EUC"
+      ],
+      "empty": null,
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "*Batch*": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "2 個見つかりました",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "AbstractBatch.java (9行)",
+        "DailyOrderBatch.java (18行) SJIS"
+      ],
+      "empty": null,
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    }
+  },
+  "findHtml": "<mark>Dao</mark>",
+  "findTreeText": "sample-project/src/com/example/order/dao/\n└─ OrderDao.java (8行)\n\n（ファイル 10 個、合計 3,061 行）\n（「dao」で絞り込み：1 個を表示）",
+  "findHiddenSel": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "2 個見つかりました",
+    "selectAll": "見つかったものを選ぶ",
+    "selected": "選んだファイル：1 個、8 行（うち 1 個は絞り込みで見えていない）",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected .st-copy-current .st-find-clear"
+  },
+  "findEsc": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：1 個、8 行",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected .st-copy-current .st-find-clear:hidden"
+  },
+  "grep": {
+    "受注": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "2 個のファイルで 3 件",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "DailyOrderBatch.java (18行) 2 件 SJIS",
+        "list.jsp (2行) 1 件 SJIS"
+      ],
+      "empty": null,
+      "hits": {
+        "summary": "ファイル 2 個、3 件",
+        "lines": 3,
+        "first": "<span class=\"st-ln\">6</span><span class=\"st-hit-text\">* 日次の<mark>受注</mark>集計バッチ（Shift_JIS で保存されている想定）</span>"
+      },
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "order": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "7 個のファイルで 13 件",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "AbstractBatch.java (9行) 1 件",
+        "DailyOrderBatch.java (18行) 4 件 SJIS",
+        "OrderDao.java (8行) 3 件",
+        "DateUtil.java (9行) 1 件 EUC",
+        "OrderListAction.java (3,003行) 2 件",
+        "struts-config.xml (6行) 1 件",
+        "build.xml (1行) 1 件"
+      ],
+      "empty": null,
+      "hits": {
+        "summary": "ファイル 7 個、13 件",
+        "lines": 13,
+        "first": "<span class=\"st-ln\">1</span><span class=\"st-hit-text\">&lt;project name=\"<mark>order</mark>\" default=\"build\"&gt;&lt;target name=\"build\"/&gt;&lt;/project&gt;</span>"
+      },
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "令和": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "1 個のファイルで 2 件",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "DateUtil.java (9行) 2 件 EUC"
+      ],
+      "empty": null,
+      "hits": {
+        "summary": "ファイル 1 個、2 件",
+        "lines": 2,
+        "first": "<span class=\"st-ln\">7</span><span class=\"st-hit-text\">/** 和暦の年を返す（平成・<mark>令和</mark>） */</span>"
+      },
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "zzzz": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "0 個のファイルで 0 件",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [],
+      "empty": "「zzzz」に一致する行はありません。",
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree:disabled .st-select-all:disabled .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "(": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "4 個のファイルで 11 件",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "AbstractBatch.java (9行) 3 件",
+        "DailyOrderBatch.java (18行) 5 件 SJIS",
+        "OrderDao.java (8行) 2 件",
+        "DateUtil.java (9行) 1 件 EUC"
+      ],
+      "empty": null,
+      "hits": {
+        "summary": "ファイル 4 個、11 件",
+        "lines": 11,
+        "first": "<span class=\"st-ln\">4</span><span class=\"st-hit-text\">public void run<mark>(</mark>String[] args) throws Exception {</span>"
+      },
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "order/case": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "7 個のファイルで 7 件",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "AbstractBatch.java (9行) 1 件",
+        "DailyOrderBatch.java (18行) 1 件 SJIS",
+        "OrderDao.java (8行) 1 件",
+        "DateUtil.java (9行) 1 件 EUC",
+        "OrderListAction.java (3,003行) 1 件",
+        "struts-config.xml (6行) 1 件",
+        "build.xml (1行) 1 件"
+      ],
+      "empty": null,
+      "hits": {
+        "summary": "ファイル 7 個、7 件",
+        "lines": 7,
+        "first": "<span class=\"st-ln\">1</span><span class=\"st-hit-text\">&lt;project name=\"<mark>order</mark>\" default=\"build\"&gt;&lt;target name=\"build\"/&gt;&lt;/project&gt;</span>"
+      },
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "re:class": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "1 個のファイルで 1 件",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [
+        "DailyOrderBatch.java (18行) 1 件 SJIS"
+      ],
+      "empty": null,
+      "hits": {
+        "summary": "ファイル 1 個、1 件",
+        "lines": 1,
+        "first": "<span class=\"st-ln\">8</span><span class=\"st-hit-text\">public <mark>class DailyOrderBatch extends</mark> AbstractBatch {</span>"
+      },
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    },
+    "re:(": {
+      "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+      "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+      "summary": "ファイル 10 個、3,061 行",
+      "findCount": "正規表現の書き方が正しくありません",
+      "selectAll": "見つかったものを選ぶ",
+      "selected": "選んだファイル：なし",
+      "parts": [],
+      "copySelectedHidden": false,
+      "warn": null,
+      "files": [],
+      "empty": "正規表現の書き方が正しくありません。",
+      "hits": null,
+      "buttons": ".st-reload:hidden .st-clear .st-copy-tree:disabled .st-select-all:disabled .st-copy-selected:disabled .st-copy-current .st-find-clear"
+    }
+  },
+  "grepJump": {
+    "sel": "    /** 和暦の年を返す（平成・令和） */",
+    "name": "src/com/example/order/util/DateUtil.java（9行、EUC-JP）"
+  },
+  "grepText": "【src-tree】sample-project の中身を「令和」で検索（ファイル 1 個、2 件）\n\nsrc/com/example/order/util/DateUtil.java\n  7: /** 和暦の年を返す（平成・令和） */\n  8: public static String toWareki(int year) { return year >= 2019 ? \"令和\" + (year - 2018) : \"平成\" + (year - 1988); }\n",
+  "grepTreeText": "sample-project/src/com/example/order/util/\n└─ DateUtil.java (9行)\n\n（ファイル 10 個、合計 3,061 行）\n（中身に「令和」を含むファイルで絞り込み：1 個を表示）",
+  "grepOff": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：なし",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear:hidden"
+  },
+  "excludeNoBin": {
+    "status": "「sample-project」を読み込みました。ファイル 11 個、合計 3,063 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nbin/　conf/　lib/　src/　WebContent/　build.xml\n対象のファイル 11 個（外すフォルダ以外のファイル 13 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 11 個、3,063 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：なし",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "run_daily.sh (2行)",
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear:hidden"
+  },
+  "extTxt": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行（Shift_JIS 2 個、EUC-JP 1 個）",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：なし",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行) SJIS",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行) EUC",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行) SJIS",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear:hidden"
+  },
+  "encUtf8": {
+    "status": "「sample-project」を読み込みました。ファイル 10 個、合計 3,061 行",
+    "folder": "📁 sample-project\nconf/　lib/　src/　WebContent/　build.xml\n対象のファイル 10 個（外すフォルダ以外のファイル 11 個のうち）。一番新しい更新：2026-10-05 14:18",
+    "summary": "ファイル 10 個、3,061 行",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：なし",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [
+      "db.properties (1行)",
+      "AbstractBatch.java (9行)",
+      "DailyOrderBatch.java (18行)",
+      "OrderDao.java (8行)",
+      "DateUtil.java (9行)",
+      "OrderListAction.java (3,003行)",
+      "list.jsp (2行)",
+      "struts-config.xml (6行)",
+      "web.xml (4行)",
+      "build.xml (1行)"
+    ],
+    "empty": null,
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear .st-copy-tree .st-select-all .st-copy-selected:disabled .st-copy-current .st-find-clear:hidden"
+  },
+  "noMerge": {
+    "len": 614,
+    "head": "sample-project/\n├─ conf/\n│   └─ db.properties (1行)\n├─ src/\n│   └─ com/\n│       └─ example/\n│           └─ order/\n│      ",
+    "hash": "23544b4c"
+  },
+  "noLines": "sample-project/\n├─ conf/\n│   └─ db.properties\n├─ src/com/example/order/\n│   ├─ batch/\n│   │   ├─ AbstractBatch.java\n│   │   └─ DailyOrderBatch.java\n│   ├─ dao/\n│   │   └─ OrderDao.java\n│   ├─ util/\n│   │   └─ DateUtil.java\n│   └─ web/\n│       └─ OrderListAction.java\n├─ WebContent/\n│   ├─ order/\n│   │   └─ list.jsp\n│   └─ WEB-INF/\n│       ├─ struts-config.xml\n│       └─ web.xml\n└─ build.xml\n\n（ファイル 10 個、合計 3,061 行）",
+  "cleared": {
+    "status": "クリアしました。",
+    "folder": null,
+    "summary": "",
+    "findCount": "",
+    "selectAll": "すべて選ぶ",
+    "selected": "選んだファイル：なし",
+    "parts": [],
+    "copySelectedHidden": false,
+    "warn": null,
+    "files": [],
+    "empty": "フォルダを選ぶと、ここに tree が出ます。",
+    "hits": null,
+    "buttons": ".st-reload:hidden .st-clear:hidden .st-copy-tree:disabled .st-select-all:disabled .st-copy-selected:disabled .st-copy-current:disabled .st-find-clear:hidden",
+    "preview": "",
+    "findValue": "",
+    "findDisabled": true
+  }
+}

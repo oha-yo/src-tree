@@ -49,8 +49,28 @@ src-tree\
 ├─ src-tree.js         … 本体（画面の部品もこの JS が作る）
 ├─ src-tree.css        … 見た目（.src-tree-tool の中だけに効く）
 └─ test\
-    └─ make_sample.py  … 試験用の「古い Java プロジェクト風」のフォルダを作る（python test/make_sample.py → test/sample-project）
+    ├─ make_sample.py  … 試験用の「古い Java プロジェクト風」のフォルダと、同じ中身の sample-data.js を作る
+    ├─ sample-data.js  … 回帰テストで読み込むファイル（make_sample.py が作る）
+    ├─ regress.html    … 回帰テスト（開くと自動で操作して、結果を expected.json と比べる）
+    ├─ regress.js
+    └─ expected.json   … 回帰テストの期待する結果
 ```
+
+## 版の番号
+画面の右上（「1. フォルダを選ぶ」の横）に `src-tree v1.1.0` のように出す。番号は `src-tree.js` の先頭の `VERSION` で決める。上げるときは、次の3つをそろえる。
+1. `src-tree.js` の `VERSION`
+2. `CHANGELOG.md`
+3. ブログの固定ページの読み込みの `?v=`（ブラウザに古いファイルを使わせないため）
+
+## 回帰テスト
+直したあとで、ほかの動きが変わっていないかを確かめる。
+```
+cd src-tree
+python -m http.server 8000
+```
+ブラウザで `http://localhost:8000/test/regress.html` を開くと、試験用のプロジェクトを読み込んで、tree のコピー、分けてコピー、ファイル名で探す、grep、設定の変更、クリアなどを自動で行い、結果を `test/expected.json` と比べる。「OK：29 項目すべて同じです」なら変わっていない。
+- 動きを**意図して**変えたときは、`regress.html?update` を開いて、出てきた JSON を `test/expected.json` に保存し直す
+- 試験用のプロジェクトを変えたときは、`python test/make_sample.py` で `sample-data.js` を作り直してから、`expected.json` も作り直す
 
 ### ページへの置き方（ローカルでもブログでも同じ）
 ```html
@@ -63,3 +83,6 @@ src-tree\
 ## 次にやりたいこと
 - クラスの一覧（パッケージ、クラス名、継承、主なメソッド）を抜き出して、AI に「どのファイルを見せてほしいか」を聞くための目次にする
 - `web.xml`・`struts-config.xml` から「URL → 処理するクラス」の対応表を作る
+
+## ライセンス
+MIT License（[LICENSE](LICENSE)）
