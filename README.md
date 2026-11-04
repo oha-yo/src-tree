@@ -78,7 +78,15 @@ python -m http.server 8000
 <div class="src-tree-tool"></div>
 <script src="（場所）/src-tree.js"></script>
 ```
-ブログ（oha-yo.com）に載せるときは、clip-tools と同じく、売り場を固定ページ `/tools/src-tree/`、倉庫を `/assets/src-tree/` にする予定。見た目は `.src-tree-tool` の中だけに効き、部品に id を使わない（テーマとぶつからないため）。
+見た目は `.src-tree-tool` の中だけに効き、部品に id を使わない（テーマとぶつからないため）。
+
+### ブログ（oha-yo.com）への出し方
+https://oha-yo.com/tools/src-tree/ で公開している。clip-tools と同じく、売り場は固定ページ `/tools/src-tree/`（ID 11077、親は「ツール」11058）、倉庫は `/assets/src-tree/`。
+1. 版を上げる（上の「版の番号」の 1・2）。回帰テストを通して、GitHub に送る
+2. **ユーザーが** `src-tree.js`（変えたなら `src-tree.css` も）を `/assets/src-tree/` に上書きでアップロードする
+3. 公開中のファイルが手元と同じかを確かめる（`curl -sL "https://oha-yo.com/assets/src-tree/src-tree.js?nocache=…"` と手元を比べる）
+4. **そのあとで**、固定ページの読み込みの `?v=` を新しい版にする（Claude が oha-yo-post スキルの `post.ps1` で行う。`get` した本文の2か所を置き換えて `update`）。先に `?v=` を変えると、古いファイルが新しい番号でブラウザにキャッシュされる
+5. 公開中のページを開いて、右上の版の番号が変わったことを確かめる
 
 ## 次にやりたいこと
 - クラスの一覧（パッケージ、クラス名、継承、主なメソッド）を抜き出して、AI に「どのファイルを見せてほしいか」を聞くための目次にする
