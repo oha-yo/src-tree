@@ -4,7 +4,7 @@
 // 置き方：<div class="src-tree-tool"></div> のあとで src-tree.js を読み込む。画面の部品はこの JS が箱の中に作る。
 // ファイルはブラウザの中で読むだけで、どこにも送らない。
 (() => {
-  const VERSION = '1.2.0';   // 変えたら CHANGELOG.md と、ページの読み込みの ?v= もそろえる
+  const VERSION = '1.3.0';   // 変えたら CHANGELOG.md と、ページの読み込みの ?v= もそろえる
 
   // ---------- 初期設定 ----------
   // 「対象の拡張子」に並べるもの：[拡張子, コードの囲みに付ける言語, 初めから選んでおくか]。拡張子を足すときは、ここだけ直す
@@ -96,7 +96,7 @@
           </div>
           <div class="st-folder" hidden></div>
           <input type="file" class="st-dir-input" webkitdirectory multiple hidden>
-          <p class="st-note">ファイルはこのブラウザの中で読むだけで、どこにも送りません。${canPickDir ? '' : 'ブラウザによっては「アップロードしますか」と聞かれますが、実際には送りません。'}</p>
+          <p class="st-note">フォルダをこの枠にドラッグして落としても読み込めます。ファイルはこのブラウザの中で読むだけで、どこにも送りません。${canPickDir ? '' : '<br>「フォルダを選ぶ」では、ブラウザが「アップロード」と出しますが、実際には送りません。ドラッグして落とせば、この確認は出ません。'}</p>
           <progress class="st-progress" hidden></progress>
           <div class="st-status"></div>
 
@@ -183,7 +183,8 @@
 
     // ---------- 状態 ----------
     let rootName = '';      // 選んだフォルダの名前
-    let dirHandle = null;   // File System Access API で選んだときのフォルダ（読み込み直しに使う）
+    let dirHandle = null;   // File System Access API で選んだとき（Chrome・Edge）のフォルダ（読み込み直しに使う）
+    let dropEntry = null;   // Firefox でドラッグして落としたときのフォルダ（FileSystemDirectoryEntry。読み込み直しに使う）
     let allRefs = [];       // 外すフォルダ以外の、すべてのファイル { path, ext, getFile }
     let entries = [];       // 対象の拡張子に絞って読み込んだファイル { path, ext, text, lines, enc, skipped, lastModified }
     const cache = new Map();     // path → 読み込んだ結果（設定を変えても読み直さないため）
@@ -207,6 +208,7 @@
       if (canPickDir) {
         try { dirHandle = await window.showDirectoryPicker({ mode: 'read' }); }
         catch (e) { if (e.name !== 'AbortError') setStatus('フォルダを開けませんでした：' + e.message); return; }
+        dropEntry = null;
         forgetFiles();
         await readFromHandle();
       } else {
@@ -222,6 +224,7 @@
       const files = [...el.dirInput.files];
       if (!files.length) return;
       forgetFiles();
+      dirHandle = null; dropEntry = null; el.reload.hidden = true;
       rootName = files[0].webkitRelativePath.split('/')[0];
       allRefs = files
         .map(f => ({ path: f.webkitRelativePath.split('/').slice(1).join('/'), getFile: async () => f }))
@@ -230,11 +233,12 @@
       await applyFilter();
     };
 
-    // Chrome・Edge：フォルダをたどる。外すフォルダには入らない（.git や node_modules をたどると時間がかかるため）
+    // フォルダをたどる。外すフォルダには入らない（.git や node_modules をたどると時間がかかるため）。
+    // Chrome・Edge は dirHandle（「フォルダを選ぶ」と、ドラッグして落としたとき）、Firefox は dropEntry（落としたとき）をたどる
     async function readFromHandle(){
-      if (!dirHandle) return;
+      if (!dirHandle && !dropEntry) return;
       const seq = ++walkSeq;
-      rootName = dirHandle.name;
+      rootName = (dirHandle || dropEntry).name;
       el.reload.hidden = false;
       busy(true, 'フォルダをたどっています…');
       const ex = excludeSet();
@@ -248,17 +252,65 @@
           }
         }
       }
-      try { await walk(dirHandle, ''); }
-      catch (e) { if (seq === walkSeq) { busy(false); setStatus('フォルダを読めませんでした：' + e.message); } return; }
+      // FileSystemDirectoryEntry は、readEntries を空になるまで繰り返して読む（1回では全部返らないことがあるため）
+      async function walkEntry(dir, prefix){
+        const reader = dir.createReader();
+        for (;;) {
+          const batch = await new Promise((ok, ng) => reader.readEntries(ok, ng));
+          if (!batch.length) break;
+          for (const h of batch) {
+            if (h.isDirectory) {
+              if (!ex.has(h.name.toLowerCase())) await walkEntry(h, prefix + h.name + '/');
+            } else {
+              refs.push({ path: prefix + h.name, ext: extOf(h.name), getFile: () => new Promise((ok, ng) => h.file(ok, ng)) });
+            }
+          }
+        }
+      }
+      try { if (dirHandle) await walk(dirHandle, ''); else await walkEntry(dropEntry, ''); }
+      catch (e) {
+        if (seq === walkSeq) { busy(false); setStatus('フォルダを読めませんでした：' + (e.message || e.name) + (dropEntry ? '。もう一度フォルダをドラッグして落としてください。' : '')); }
+        return;
+      }
       if (seq !== walkSeq) return;
       allRefs = refs;
       await applyFilter();
     }
 
+    // ドラッグして落とす：Firefox でも「アップロード」の確認を出さずにフォルダを読める。Chrome・Edge では、落としたフォルダの
+    // FileSystemDirectoryHandle をもらうので、「フォルダを選ぶ」と同じに読み込み直しもできる。
+    // ツールの枠のどこに落としてもよい（うっかりファイルを落として、ブラウザがそのファイルを開いてしまうのも防ぐ）
+    const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+    let dragDepth = 0;
+    root.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; root.classList.add('st-dragover'); });
+    root.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = el.pick.disabled ? 'none' : 'copy'; });
+    root.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; root.classList.remove('st-dragover'); } });
+    root.addEventListener('drop', e => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth = 0; root.classList.remove('st-dragover');
+      if (el.pick.disabled) return;   // 読み込み中
+      // DataTransfer の中身は、このイベントの中でしか取り出せないので、先に全部取り出しておく
+      const items = [...e.dataTransfer.items].filter(it => it.kind === 'file');
+      const handles = items.map(it => typeof it.getAsFileSystemHandle === 'function' ? it.getAsFileSystemHandle() : null);
+      const entriesIn = items.map(it => typeof it.webkitGetAsEntry === 'function' ? it.webkitGetAsEntry() : null);
+      readDropped(handles, entriesIn);
+    });
+    async function readDropped(handles, entriesIn){
+      if (handles.some(Boolean)) {
+        const hs = await Promise.all(handles.map(p => p && p.catch(() => null)));
+        const dir = hs.find(h => h && h.kind === 'directory');
+        if (dir) { dirHandle = dir; dropEntry = null; forgetFiles(); await readFromHandle(); return; }
+      }
+      const dir = entriesIn.find(x => x && x.isDirectory);
+      if (dir) { dropEntry = dir; dirHandle = null; forgetFiles(); await readFromHandle(); return; }
+      setStatus('ファイルではなく、プロジェクトのフォルダをドラッグして落としてください。');
+    }
+
     // クリア：読み込んだファイルの中身をこのページから消して、最初の状態に戻す（拡張子などの設定はそのまま）
     el.clear.onclick = () => {
       forgetFiles();
-      rootName = ''; dirHandle = null; allRefs = []; entries = [];
+      rootName = ''; dirHandle = null; dropEntry = null; allRefs = []; entries = [];
       el.findInput.value = ''; findQuery = ''; el.findClear.hidden = true; el.findInput.disabled = true;
       el.findCount.textContent = ''; el.selectAll.textContent = 'すべて選ぶ';
       el.dirInput.value = ''; el.preview.value = ''; el.currentName.textContent = ''; el.copyCurrent.disabled = true;
@@ -342,7 +394,7 @@
     // 設定を変えたら、選び直さずに作り直す（外すフォルダを変えたら、Chrome・Edge ではフォルダをたどり直す）
     el.exts.forEach(c => c.onchange = () => allRefs.length && applyFilter());
     el.extMore.onchange = () => allRefs.length && applyFilter();
-    el.exclude.onchange = () => { if (dirHandle) readFromHandle(); else if (allRefs.length) applyFilter(); };
+    el.exclude.onchange = () => { if (dirHandle || dropEntry) readFromHandle(); else if (allRefs.length) applyFilter(); };
     el.enc.onchange = () => allRefs.length && applyFilter();
     el.merge.onchange = renderTree;
     el.showLines.onchange = renderTree;
@@ -710,7 +762,7 @@
     // 試験用：ファイルの一覧を直接渡して読み込む（{ path, text または bytes, lastModified? } の配列）
     root.srcTreeLoad = async (name, list) => {
       forgetFiles();
-      rootName = name; dirHandle = null;
+      rootName = name; dirHandle = null; dropEntry = null;
       allRefs = list.map(x => ({ path: x.path, ext: extOf(x.path), getFile: async () => new File([x.bytes || x.text], baseName(x.path), { lastModified: x.lastModified || 1 }) }));
       await applyFilter();
     };
