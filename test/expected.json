@@ -10,7 +10,7 @@
     "copySelectedHidden": false,
     "warn": null,
     "files": [],
-    "empty": "フォルダを選ぶと、ここに tree が出ます。ファイルにチェックを付けると、そのソースをまとめてコピーできます。ファイル名を押すと、下に中身が出ます。",
+    "empty": "「フォルダを選ぶ」で選ぶか、ここにフォルダをドラッグして落とすと、tree が出ます。ファイルにチェックを付けると、そのソースをまとめてコピーできます。ファイル名を押すと、下に中身が出ます。",
     "hits": null,
     "buttons": ".st-reload:hidden .st-clear:hidden .st-copy-tree:disabled .st-select-all:disabled .st-copy-selected:disabled .st-copy-current:disabled .st-find-clear:hidden"
   },
@@ -661,7 +661,7 @@
     "copySelectedHidden": false,
     "warn": null,
     "files": [],
-    "empty": "フォルダを選ぶと、ここに tree が出ます。",
+    "empty": "「フォルダを選ぶ」で選ぶか、ここにフォルダをドラッグして落とすと、tree が出ます。",
     "hits": null,
     "buttons": ".st-reload:hidden .st-clear:hidden .st-copy-tree:disabled .st-select-all:disabled .st-copy-selected:disabled .st-copy-current:disabled .st-find-clear:hidden",
     "preview": "",

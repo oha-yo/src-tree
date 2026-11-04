@@ -96,7 +96,7 @@
           </div>
           <div class="st-folder" hidden></div>
           <input type="file" class="st-dir-input" webkitdirectory multiple hidden>
-          <p class="st-note">フォルダをこの枠にドラッグして落としても読み込めます。ファイルはこのブラウザの中で読むだけで、どこにも送りません。${canPickDir ? '' : '<br>「フォルダを選ぶ」では、ブラウザが「アップロード」と出しますが、実際には送りません。ドラッグして落とせば、この確認は出ません。'}</p>
+          <p class="st-note">フォルダをこのページにドラッグして落としても読み込めます。ファイルはこのブラウザの中で読むだけで、どこにも送りません。${canPickDir ? '' : '<br>「フォルダを選ぶ」では、ブラウザが「アップロード」と出しますが、実際には送りません。ドラッグして落とせば、この確認は出ません。'}</p>
           <progress class="st-progress" hidden></progress>
           <div class="st-status"></div>
 
@@ -147,7 +147,7 @@
             <button type="button" class="st-expand" disabled>すべて開く</button>
             <button type="button" class="st-collapse" disabled>すべて閉じる</button>
           </div>
-          <div class="st-tree"><div class="st-empty">フォルダを選ぶと、ここに tree が出ます。<br>ファイルにチェックを付けると、そのソースをまとめてコピーできます。ファイル名を押すと、下に中身が出ます。</div></div>
+          <div class="st-tree"><div class="st-empty">「フォルダを選ぶ」で選ぶか、<b>ここにフォルダをドラッグして落とす</b>と、tree が出ます。<br>ファイルにチェックを付けると、そのソースをまとめてコピーできます。ファイル名を押すと、下に中身が出ます。</div></div>
           <div class="st-hits" hidden>
             <div class="st-hits-head"><span class="st-meta st-hits-summary"></span><button type="button" class="st-copy-grep">grep 結果をコピー</button></div>
             <div class="st-hits-list"></div>
@@ -279,13 +279,16 @@
 
     // ドラッグして落とす：Firefox でも「アップロード」の確認を出さずにフォルダを読める。Chrome・Edge では、落としたフォルダの
     // FileSystemDirectoryHandle をもらうので、「フォルダを選ぶ」と同じに読み込み直しもできる。
-    // ツールの枠のどこに落としてもよい（うっかりファイルを落として、ブラウザがそのファイルを開いてしまうのも防ぐ）
-    const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+    // ページのどこに落としてもよい（枠の外に落として、ブラウザがそのフォルダやファイルを開いてしまい、読み込んだ tree が消えるのを防ぐ）。
+    // 1つのページにツールが2つあるときは、ページ全体で受けるのは最初のツールだけで、ほかは自分の枠の中だけで受ける
+    const dropArea = pageDropTaken ? root : document;
+    pageDropTaken = true;
+    const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files') && !e.target.closest?.('input[type=file]');
     let dragDepth = 0;
-    root.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; root.classList.add('st-dragover'); });
-    root.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = el.pick.disabled ? 'none' : 'copy'; });
-    root.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; root.classList.remove('st-dragover'); } });
-    root.addEventListener('drop', e => {
+    dropArea.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; root.classList.add('st-dragover'); });
+    dropArea.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = el.pick.disabled ? 'none' : 'copy'; });
+    dropArea.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; root.classList.remove('st-dragover'); } });
+    dropArea.addEventListener('drop', e => {
       if (!hasFiles(e)) return;
       e.preventDefault();
       dragDepth = 0; root.classList.remove('st-dragover');
@@ -558,7 +561,7 @@
       const has = entries.length > 0;
       [el.copyTree, el.selectAll, el.selectNone, el.expand, el.collapse].forEach(b => b.disabled = !has);
       if (!has) {
-        el.tree.innerHTML = `<div class="st-empty">${allRefs.length ? '対象のファイルがありません。左の「対象の拡張子」や「外すフォルダ」を確かめてください。' : 'フォルダを選ぶと、ここに tree が出ます。'}</div>`;
+        el.tree.innerHTML = `<div class="st-empty">${allRefs.length ? '対象のファイルがありません。左の「対象の拡張子」や「外すフォルダ」を確かめてください。' : '「フォルダを選ぶ」で選ぶか、<b>ここにフォルダをドラッグして落とす</b>と、tree が出ます。'}</div>`;
         el.summary.textContent = '';
         renderHits();
         updateSelection();
@@ -768,6 +771,7 @@
     };
   }
 
+  let pageDropTaken = false;   // ページ全体へのドロップを、どれかのツールが受けているか
   const start = () => document.querySelectorAll('.src-tree-tool').forEach(init);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
