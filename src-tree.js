@@ -4,17 +4,17 @@
 // 置き方：<div class="src-tree-tool"></div> のあとで src-tree.js を読み込む。画面の部品はこの JS が箱の中に作る。
 // ファイルはブラウザの中で読むだけで、どこにも送らない。
 (() => {
-  const VERSION = '1.1.0';   // 変えたら CHANGELOG.md と、ページの読み込みの ?v= もそろえる
+  const VERSION = '1.2.0';   // 変えたら CHANGELOG.md と、ページの読み込みの ?v= もそろえる
 
   // ---------- 初期設定 ----------
-  const EXTS = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat', 'js', 'html', 'css', 'tld', 'xsl', 'gradle', 'txt'];
-  const EXTS_ON = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat'];
+  const EXTS = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat', 'py', 'js', 'html', 'css', 'tld', 'xsl', 'gradle', 'txt'];
+  const EXTS_ON = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat', 'py'];
   const EXCLUDE = '.git, .svn, bin, build, classes, target, out, .settings, .metadata, .idea, node_modules';
   const PART_LINES = 2500;            // 1回にコピーする行数の上限（Copilot は 3000 行くらいまで貼れた）
   const MAX_BYTES = 2 * 1024 * 1024;  // これより大きいファイルは読み込まない
   const GREP_SHOW = 1000;             // grep の一覧に出す行の上限（コピーには全部入れる）
   // コードの囲みに付ける言語の名前
-  const LANG = { java: 'java', jsp: 'jsp', xml: 'xml', properties: 'properties', sql: 'sql', sh: 'bash', bat: 'bat', js: 'javascript', html: 'html', css: 'css', tld: 'xml', xsl: 'xml', gradle: 'groovy', txt: 'text' };
+  const LANG = { java: 'java', jsp: 'jsp', xml: 'xml', properties: 'properties', sql: 'sql', sh: 'bash', bat: 'bat', py: 'python', js: 'javascript', html: 'html', css: 'css', tld: 'xml', xsl: 'xml', gradle: 'groovy', txt: 'text' };
   // 探す欄の例
   const PH = {
     name: 'ファイル名で探す（例：OrderDao、*Action.java、order dao、batch/）',
