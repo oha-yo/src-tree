@@ -7,14 +7,25 @@
   const VERSION = '1.2.0';   // 変えたら CHANGELOG.md と、ページの読み込みの ?v= もそろえる
 
   // ---------- 初期設定 ----------
-  const EXTS = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat', 'py', 'js', 'html', 'css', 'tld', 'xsl', 'gradle', 'txt'];
-  const EXTS_ON = ['java', 'jsp', 'xml', 'properties', 'sql', 'sh', 'bat', 'py'];
+  // 「対象の拡張子」に並べるもの：[拡張子, コードの囲みに付ける言語, 初めから選んでおくか]。拡張子を足すときは、ここだけ直す
+  const EXTS = [
+    ['java', 'java', true], ['jsp', 'jsp', true], ['xml', 'xml', true], ['properties', 'properties', true], ['sql', 'sql', true],
+    ['sh', 'bash', true], ['bat', 'bat', true], ['py', 'python', true],
+    ['js', 'javascript'], ['html', 'html'], ['css', 'css'], ['tld', 'xml'], ['xsl', 'xml'], ['gradle', 'groovy'], ['txt', 'text'],
+  ];
+  // 一覧には出さないが、「ほかの拡張子」に入れたときに、コードの囲みに付ける言語
+  const LANG_MORE = {
+    jspf: 'jsp', jspx: 'xml', tag: 'jsp', ksh: 'bash', csh: 'bash', bash: 'bash', cmd: 'bat', ps1: 'powershell',
+    pls: 'sql', pks: 'sql', pkb: 'sql', ctl: 'text', xsd: 'xml', wsdl: 'xml', dtd: 'xml', xhtml: 'html',
+    vm: 'velocity', ftl: 'ftl', yml: 'yaml', yaml: 'yaml', json: 'json', groovy: 'groovy', kts: 'kotlin', kt: 'kotlin',
+    ts: 'typescript', ini: 'ini', conf: 'text', cfg: 'text', md: 'markdown', c: 'c', h: 'c', cs: 'csharp', vb: 'vbnet', rb: 'ruby', pl: 'perl',
+  };
+  // コードの囲みに付ける言語の名前（拡張子 → 言語）
+  const LANG = { ...Object.fromEntries(EXTS.map(([ext, lang]) => [ext, lang])), ...LANG_MORE };
   const EXCLUDE = '.git, .svn, bin, build, classes, target, out, .settings, .metadata, .idea, node_modules';
   const PART_LINES = 2500;            // 1回にコピーする行数の上限（Copilot は 3000 行くらいまで貼れた）
   const MAX_BYTES = 2 * 1024 * 1024;  // これより大きいファイルは読み込まない
   const GREP_SHOW = 1000;             // grep の一覧に出す行の上限（コピーには全部入れる）
-  // コードの囲みに付ける言語の名前
-  const LANG = { java: 'java', jsp: 'jsp', xml: 'xml', properties: 'properties', sql: 'sql', sh: 'bash', bat: 'bat', py: 'python', js: 'javascript', html: 'html', css: 'css', tld: 'xml', xsl: 'xml', gradle: 'groovy', txt: 'text' };
   // 探す欄の例
   const PH = {
     name: 'ファイル名で探す（例：OrderDao、*Action.java、order dao、batch/）',
@@ -91,7 +102,7 @@
 
           <div class="st-group">
             <div class="st-legend">対象の拡張子</div>
-            <div class="st-exts">${EXTS.map(e => `<label><input type="checkbox" value="${e}"${EXTS_ON.includes(e) ? ' checked' : ''}> .${e}</label>`).join('')}</div>
+            <div class="st-exts">${EXTS.map(([ext, , on]) => `<label><input type="checkbox" value="${ext}"${on ? ' checked' : ''}> .${ext}</label>`).join('')}</div>
             <div style="margin-top:6px"><input type="text" class="st-ext-more" placeholder="ほかの拡張子（カンマ区切り。例：vm, ftl, conf）"></div>
           </div>
           <div class="st-group">
@@ -181,9 +192,13 @@
     let current = null;          // ファイル名を押して中身を表示しているファイル
     let findQuery = '';          // 探す欄に入れた文字
     let grepMemo = null;         // grep の結果（入力や設定が同じなら作り直さない）
+    // 読み込みの番号。読み込みの途中で設定を変えると、次の読み込みが始まる。古いほうは途中でやめて、最後に始めたものだけを画面に出す。
+    // フォルダをたどるほう（walkSeq）と、ファイルを読むほう（loadSeq）で分ける（たどっている途中で拡張子を変えても、たどり直しは捨てないように）
+    let walkSeq = 0, loadSeq = 0;
 
     // 別のフォルダを読み込む前に、前のフォルダのことを忘れる
     function forgetFiles(){
+      walkSeq++; loadSeq++;
       cache.clear(); selected.clear(); collapsed.clear(); current = null; grepMemo = null;
     }
 
@@ -201,16 +216,16 @@
     };
     el.reload.onclick = () => readFromHandle();
 
-    // Firefox：選んだフォルダの中のファイルが全部渡される（外すフォルダの中も）ので、ここで外す
+    // Firefox：選んだフォルダの中のファイルが全部渡される（外すフォルダの中も）。
+    // ここでは捨てずに全部持っておき、外すのは applyFilter・renderFolder に任せる（「外すフォルダ」から消したら、選び直さずに出せるように）
     el.dirInput.onchange = async () => {
       const files = [...el.dirInput.files];
       if (!files.length) return;
       forgetFiles();
       rootName = files[0].webkitRelativePath.split('/')[0];
-      const ex = excludeSet();
       allRefs = files
         .map(f => ({ path: f.webkitRelativePath.split('/').slice(1).join('/'), getFile: async () => f }))
-        .filter(r => r.path && !inExcluded(r.path, ex))
+        .filter(r => r.path)
         .map(r => ({ ...r, ext: extOf(r.path) }));
       await applyFilter();
     };
@@ -218,6 +233,7 @@
     // Chrome・Edge：フォルダをたどる。外すフォルダには入らない（.git や node_modules をたどると時間がかかるため）
     async function readFromHandle(){
       if (!dirHandle) return;
+      const seq = ++walkSeq;
       rootName = dirHandle.name;
       el.reload.hidden = false;
       busy(true, 'フォルダをたどっています…');
@@ -233,7 +249,8 @@
         }
       }
       try { await walk(dirHandle, ''); }
-      catch (e) { busy(false); setStatus('フォルダを読めませんでした：' + e.message); return; }
+      catch (e) { if (seq === walkSeq) { busy(false); setStatus('フォルダを読めませんでした：' + e.message); } return; }
+      if (seq !== walkSeq) return;
       allRefs = refs;
       await applyFilter();
     }
@@ -259,6 +276,7 @@
 
     // 対象の拡張子のファイルを読み込んで、画面を作り直す
     async function applyFilter(){
+      const seq = ++loadSeq;
       const exts = extSet(), ex = excludeSet();
       const targets = allRefs
         .filter(r => exts.has(r.ext) && !inExcluded(r.path, ex))
@@ -269,6 +287,7 @@
       let i = 0;
       for (const r of targets) {
         out.push(await readEntry(r));
+        if (seq !== loadSeq) return;
         if (++i % 20 === 0) { el.progress.value = i; setStatus(`ファイルを読み込んでいます…（${i} / ${targets.length}）`); }
       }
       entries = out;
